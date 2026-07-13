@@ -1,0 +1,12 @@
+{
+  "name": "Rabimbox – Moj panel",
+  "short_name": "Rabimbox",
+  "description": "Uporabniški panel za najem in skladiščenje boxov",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "Slike/3-scaled.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
