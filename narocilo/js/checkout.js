@@ -20,7 +20,7 @@
   var STEPS=[["paketi","Paketi"],["dodatki","Dodatki"],["termin","Termin"],["povzetek","Povzetek"],["racun","Račun"]];
 
   var s={step:"choice",tip:null,plan:null,stBoxov:null,extras:{stopnice:false,krhko:false,pomoc:false},
-    opis:"",naslov:"",enota:"",telefon:"",datum:"",cas:"",ime:"",priimek:"",email:"",geslo:""};
+    opis:"",naslov:"",enota:"",telefon:"",datum:"",cas:"",ime:"",priimek:"",email:"",geslo:"",racunMode:"novo",soglasje:false};
 
   var ICON={
     truck:'<svg viewBox="0 0 24 24" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M3 6h11v9H3z"/><path d="M14 9h3.5L21 12.5V15h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17.5" cy="18" r="1.8"/></svg>',
@@ -167,26 +167,48 @@
 
   // ---- RACUN ----
   function viewRačun(){
+    var novo=s.racunMode!=="prijava";
     render('<h1 class="co-title"><button class="back-inline" data-back>‹</button>Tvoji podatki</h1>'+
-      '<p class="co-sub">Vpiši kontaktne podatke za potrditev naročila.</p>'+progress("racun")+
+      '<p class="co-sub">'+(novo?"Ustvari račun za spremljanje naročil – ali se prijavi, če ga že imaš.":"Prijavi se v svoj obstoječi račun.")+'</p>'+progress("racun")+
       '<div class="split"><div class="card">'+
+      '<div class="rowflex" style="margin-bottom:16px">'+
+        '<button type="button" class="btn'+(novo?"":" ghost")+'" id="mNovo">Ustvari račun</button>'+
+        '<button type="button" class="btn'+(novo?" ghost":"")+'" id="mPrijava">Imam račun</button>'+
+      '</div>'+
       '<div class="rowflex"><div class="field"><label>Ime</label><input id="ime" value="'+esc(s.ime)+'" /></div>'+
       '<div class="field"><label>Priimek</label><input id="priimek" value="'+esc(s.priimek)+'" /></div></div>'+
-      '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div>'+'<div class="field"><label>Geslo (za dostop do panela)</label><input type="password" id="geslo" value="'+esc(s.geslo||"")+'" placeholder="vsaj 6 znakov" minlength="6" /><div class="hint">Ustvarimo ti racun za spremljanje narocil v panelu Moj-profil.</div></div>'+
+      '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div>'+
+      '<div class="field"><label>Geslo'+(novo?" (za dostop do panela)":"")+'</label><input type="password" id="geslo" value="'+esc(s.geslo||"")+'" placeholder="vsaj 6 znakov" minlength="6" />'+(novo?'<div class="hint">Ustvarimo ti račun za spremljanje naročil v panelu Moj račun.</div>':'<div class="hint">Vpiši geslo svojega računa.</div>')+'</div>'+
+      (novo?'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#7b8794;margin:0 0 14px;cursor:pointer"><input type="checkbox" id="soglasje" '+(s.soglasje?"checked":"")+' style="margin-top:2px" /> <span>Soglašam s <a href="../pravila-in-pogoji/index.html" target="_blank" rel="noopener">pogoji poslovanja</a>.</span></label>':'')+
       '<div class="alert info">Plačilo (Stripe) bo dodano kmalu. Za zdaj oddaš naročilo brez plačila — poklicali te bomo za potrditev in termin.</div>'+
       '</div>'+summaryCard()+'</div>'+
       '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="submit">Oddaj naročilo</button></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="povzetek";route();};});
     ["ime","priimek","email","geslo"].forEach(function(id){q$("#"+id).oninput=function(e){s[id]=e.target.value;};});
+    var cb=q$("#soglasje");if(cb)cb.onchange=function(e){s.soglasje=e.target.checked;};
+    var mn=q$("#mNovo");if(mn)mn.onclick=function(){s.racunMode="novo";route();};
+    var mp=q$("#mPrijava");if(mp)mp.onclick=function(){s.racunMode="prijava";route();};
     q$("#submit").onclick=submit;
   }
 
   async function submit(){
     if(!s.email||s.email.indexOf("@")<0){alert("Prosim vpiši veljaven e-naslov.");return;}
-    if(!s.geslo||s.geslo.length<6){alert("Vpiši geslo (vsaj 6 znakov) za dostop do panela.");return;}
+    if(!s.geslo||s.geslo.length<6){alert("Vpiši geslo (vsaj 6 znakov).");return;}
+    if(s.racunMode!=="prijava"&&!s.soglasje){alert("Za ustvarjanje računa moraš soglašati s pogoji poslovanja.");return;}
     var btn=q$("#submit");btn.disabled=true;btn.textContent="Pošiljam...";
     if(s.datum&&s.cas){var _bl=await blockedFor(s.datum);if(_bl[parseInt(s.cas,10)]){alert("Izbrani termin je pravkar zaseden. Prosim izberi drug termin.");btn.disabled=false;btn.textContent="Oddaj naročilo";s.step="termin";route();return;}}
-    try{if(sb){var su=await sb.auth.signUp({email:s.email,password:s.geslo});if(su&&su.error&&/registered|exists/i.test(su.error.message)){try{await sb.auth.signInWithPassword({email:s.email,password:s.geslo});}catch(e){}}}}catch(e){}
+    if(sb){
+      if(s.racunMode==="prijava"){
+        var li=await sb.auth.signInWithPassword({email:s.email,password:s.geslo});
+        if(li&&li.error){alert("Prijava ni uspela – napačno geslo ali račun ne obstaja. Preveri podatke ali izberi 'Ustvari račun'.");btn.disabled=false;btn.textContent="Oddaj naročilo";return;}
+      }else{
+        var su=await sb.auth.signUp({email:s.email,password:s.geslo});
+        if(su&&su.error&&/registered|exists/i.test(su.error.message)){
+          var li2=await sb.auth.signInWithPassword({email:s.email,password:s.geslo});
+          if(li2&&li2.error){alert("Ta e-naslov je že registriran, geslo pa ni pravilno. Izberi 'Imam račun' in vpiši pravo geslo.");btn.disabled=false;btn.textContent="Oddaj naročilo";return;}
+        }
+      }
+    }
     var rec={tip:s.tip,paket:planLabel(),st_boxov:(s.tip==="izposoja"?planObj().boxes:s.stBoxov),
       cena_opis:cenaOpis(),stopnice:s.extras.stopnice,krhko:s.extras.krhko,pomoc_polnjenje:s.extras.pomoc,
       opis_lokacije:s.opis||null,naslov:s.naslov||null,enota:s.enota||null,telefon:s.telefon||null,

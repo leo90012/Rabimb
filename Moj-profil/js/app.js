@@ -84,11 +84,12 @@
     const isReg = mode === "register", isMagic = mode === "magic";
     render(`<div class="auth-wrap"><div class="auth-logo"><img src="${LOGO}" alt="Rabimbox" /><p>Moj račun za najem in skladiščenje</p></div>
       <div class="auth-card">
-        <div class="seg"><button data-mode="login" class="${mode === "login" ? "active" : ""}">Prijava</button><button data-mode="register" class="${isReg ? "active" : ""}">Registracija</button><button data-mode="magic" class="${isMagic ? "active" : ""}">E-povezava</button></div>
+        <div class="seg"><button data-mode="login" class="${mode === "login" ? "active" : ""}">Prijava</button><button data-mode="register" class="${isReg ? "active" : ""}">Registracija</button></div>
         ${msg ? `<div class="alert ${mt}">${msg}</div>` : ""}
         <form id="authForm">
           <div class="field"><label>E-poštni naslov</label><input type="email" id="email" autocomplete="email" required placeholder="ime@primer.si" />${isReg ? `<div class="hint">Uporabi isti e-naslov, ki ga imaš v evidenci Rabimbox.</div>` : ""}</div>
           ${!isMagic ? `<div class="field"><label>Geslo</label><input type="password" id="password" autocomplete="${isReg ? "new-password" : "current-password"}" required minlength="6" placeholder="********" /></div>` : `<div class="hint" style="margin-bottom:14px">Poslali ti bomo povezavo za prijavo brez gesla.</div>`}
+          ${isReg ? `<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#7b8794;margin:2px 0 14px;cursor:pointer"><input type="checkbox" id="agree" style="margin-top:2px" /> <span>Soglašam s <a href="../pravila-in-pogoji/index.html" target="_blank" rel="noopener">pogoji poslovanja</a>.</span></label>` : ""}
           <button class="btn primary" type="submit" id="authBtn">${isMagic ? "Pošlji povezavo" : isReg ? "Ustvari račun" : "Prijava"}</button>
         </form>
         ${mode === "login" ? `<button class="btn ghost mt" id="forgot">Pozabljeno geslo?</button>` : ""}
@@ -103,6 +104,8 @@
     btn.disabled = true; btn.textContent = "Prosim počakaj...";
     try {
       if (mode === "register") {
+        const agree = $("#agree");
+        if (!agree || !agree.checked) { showAuth("register", "Za registracijo moraš soglašati s pogoji poslovanja.", "err"); return; }
         const { error } = await state.sb.auth.signUp({ email, password: pass });
         if (error) throw error;
         showAuth("login", "Račun ustvarjen. Če je vključena potrditev e-pošte, preveri predal, nato se prijavi.", "ok"); return;
