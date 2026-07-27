@@ -135,3 +135,9 @@ svg{display:block}
 .info-2 h4{font-family:var(--font-h);font-size:16px;margin-bottom:8px}
 .info-2 p{color:var(--muted);font-size:13.5px;margin:0}
 .sec-title{text-align:center;font-size:20px;margin:0 0 4px}
+
+/* Ozadje samo na koraku izbire storitve */
+body.bg-choice{background:url("../Slike/Ozadje.png") center/cover no-repeat fixed}
+body.bg-choice .co-header{background:rgba(255,255,255,.92)}
+body.bg-choice .co-title,body.bg-choice .co-sub{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+body.bg-choice .choice{box-shadow:0 12px 34px rgba(16,24,40,.30)}

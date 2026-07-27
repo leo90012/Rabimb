@@ -20,7 +20,11 @@
   var STEPS=[["paketi","Paketi"],["dodatki","Dodatki"],["termin","Termin"],["povzetek","Povzetek"],["racun","Račun"]];
 
   var s={step:"choice",tip:null,plan:null,stBoxov:null,extras:{stopnice:false,krhko:false,pomoc:false},
-    opis:"",naslov:"",enota:"",telefon:"",datum:"",cas:"",ime:"",priimek:"",email:"",geslo:"",racunMode:"novo",soglasje:false,loggedIn:false,loginHint:false};
+    opis:"",naslov:"",enota:"",postna:"",mesto:"",telefon:"",datum:"",cas:"",ime:"",priimek:"",email:"",geslo:"",racunMode:"novo",soglasje:false,loggedIn:false,loginHint:false};
+
+  var LJ_POSTE=["1000","1210","1211","1215","1231","1235","1236","1260","1261","1262","1290","1291","1292","1293","1294","1295","1296","1351","1354","1355","1356","1357","1358","1360","1370"];
+
+  (function(){var qp=new URLSearchParams(location.search);var t=qp.get("tip");if(t==="izposoja"||t==="skladiscenje"){s.tip=t;s.plan=null;s.stBoxov=null;s.step="paketi";}})();
 
   var ICON={
     truck:'<svg viewBox="0 0 24 24" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M3 6h11v9H3z"/><path d="M14 9h3.5L21 12.5V15h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17.5" cy="18" r="1.8"/></svg>',
@@ -90,7 +94,6 @@
     render('<h1 class="co-title"><button class="back-inline" data-back>‹</button>Dodatne informacije</h1>'+
       '<p class="co-sub">Nekaj podrobnosti, da bo dostava/prevzem potekal gladko.</p>'+progress("dodatki")+
       xrow("stairs","stopnice","Potrebujete dostop čez več kot 2 nadstropji stopnic?","")+
-      xrow("fragile","krhko","Ali shranjujete krhke predmete?","")+
       xrow("help","pomoc","Želite pomoč pri polnjenju boxov?","Doplačilo 25 €/h")+
       '<div class="card mt"><div class="field"><label>Opis lokacije / stavbe</label>'+
       '<textarea id="opis" rows="3" placeholder="Npr. 3. nadstropje, desno od dvigala, šifra vrat 1234...">'+esc(s.opis)+'</textarea>'+
@@ -107,32 +110,57 @@
   }
 
   // ---- TERMIN ----
-  function viewTermin(){
-    render('<h1 class="co-title"><button class="back-inline" data-back>‹</button>Termin dostave</h1>'+
-      '<p class="co-sub">Vpiši naslov ter izberi datum in uro.</p>'+progress("termin")+
-      '<div class="split"><div class="card">'+
-      '<div class="rowflex"><div class="field"><label>Naslov za dostavo</label><input id="naslov" value="'+esc(s.naslov)+'" placeholder="Ulica in hisna stevilka, kraj" /></div>'+
-      '<div class="field" style="max-width:120px"><label>Enota</label><input id="enota" value="'+esc(s.enota)+'" placeholder="npr. 12" /></div></div>'+
-      '<div class="field"><label>Telefon</label><input id="telefon" value="'+esc(s.telefon)+'" placeholder="+386..." /></div>'+
-      '<div class="rowflex"><div class="field"><label>Datum</label><input type="date" id="datum" min="'+todayStr()+'" value="'+esc(s.datum)+'" /></div>'+
-      '<div class="field"><label>Ura</label><select id="cas"><option value="">Najprej izberi datum</option></select><div class="hint" id="casHint"></div></div></div>'+
-      '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="next">Naprej</button></div>');
+  function ljAllowed(){
+    var pz=(s.postna||"").trim();
+    var mesto=(s.mesto||"").toLowerCase();
+    return LJ_POSTE.indexOf(pz)>=0 || mesto.indexOf("ljubljana")>=0;
+  }
+  function terminNavHtml(){
+    var ok=ljAllowed();
+    return '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button>'+
+      (ok?'<button class="btn" id="next">Naprej</button>'
+         :'<a class="btn" href="mailto:info@rabimbox.si?subject='+encodeURIComponent("Povpraševanje – dostava izven Ljubljane")+'">Kontaktiraj nas</a>')+
+      '</div>'+
+      (ok?'':'<p class="muted" style="text-align:center;font-size:13px;margin-top:10px">Online naročilo je trenutno možno samo za stranke v Ljubljani in okolici. Za druge lokacije nas kontaktirajte.</p>');
+  }
+  function bindTerminNav(){
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="dodatki";route();};});
-    ["naslov","enota","telefon"].forEach(function(id){q$("#"+id).oninput=function(e){s[id]=e.target.value;};});
-    q$("#datum").onchange=function(e){s.datum=e.target.value;s.cas="";refreshTimes();};
-    q$("#cas").onchange=function(e){s.cas=e.target.value;};
-    if(s.datum)refreshTimes();
-    q$("#next").onclick=function(){
-      if(!s.naslov||!s.datum||!s.cas){alert("Prosim vpiši naslov, datum in uro.");return;}
+    var nb=q$("#next");
+    if(nb)nb.onclick=function(){
+      if(!s.ime||!s.priimek||!s.naslov||!s.postna||!s.mesto||!s.telefon){alert("Prosim izpolni ime, priimek, naslov, poštno številko, mesto in telefon.");return;}
+      if(!s.email||s.email.indexOf("@")<1){alert("Prosim vpiši veljaven e-naslov.");return;}
+      if(!s.datum||!s.cas){alert("Prosim izberi datum in uro.");return;}
       if(s.datum<todayStr()){alert("Datum ne more biti v preteklosti.");return;}
       s.step="povzetek";route();
     };
   }
-  function timeOpts(blocked){var o="";for(var h=8;h<=18;h++){var t=(h<10?"0":"")+h+":00";var dis=blocked&&blocked[h]?" disabled":"";o+='<option value="'+t+'"'+dis+(s.cas===t?" selected":"")+'>'+t+(dis?" (zasedeno)":"")+'</option>';}return o;}
+  function refreshTerminNav(){var w=q$("#terminNav");if(w){w.innerHTML=terminNavHtml();bindTerminNav();}}
+  function viewTermin(){
+    render('<h1 class="co-title"><button class="back-inline" data-back>‹</button>Termin dostave</h1>'+
+      '<p class="co-sub">Vpiši kontaktne podatke, naslov ter izberi datum in uro.</p>'+progress("termin")+
+      '<div class="split"><div class="card">'+
+      '<div class="rowflex"><div class="field"><label>Ime</label><input id="ime" value="'+esc(s.ime)+'" /></div>'+
+      '<div class="field"><label>Priimek</label><input id="priimek" value="'+esc(s.priimek)+'" /></div></div>'+
+      '<div class="rowflex"><div class="field"><label>Naslov za dostavo</label><input id="naslov" value="'+esc(s.naslov)+'" placeholder="Ulica in hišna številka" /></div>'+
+      '<div class="field" style="max-width:120px"><label>Enota</label><input id="enota" value="'+esc(s.enota)+'" placeholder="npr. 12" /></div></div>'+
+      '<div class="rowflex"><div class="field" style="max-width:150px"><label>Poštna številka</label><input id="postna" value="'+esc(s.postna)+'" placeholder="1000" /></div>'+
+      '<div class="field"><label>Mesto</label><input id="mesto" value="'+esc(s.mesto)+'" placeholder="Ljubljana" /></div></div>'+
+      '<div class="rowflex"><div class="field"><label>Telefon</label><input id="telefon" value="'+esc(s.telefon)+'" placeholder="+386..." /></div>'+
+      '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div></div>'+
+      '<div class="rowflex"><div class="field"><label>Datum</label><input type="date" id="datum" min="'+todayStr()+'" value="'+esc(s.datum)+'" /></div>'+
+      '<div class="field"><label>Ura</label><select id="cas"><option value="">Najprej izberi datum</option></select><div class="hint" id="casHint"></div></div></div>'+
+      '</div>'+summaryCard()+'</div>'+
+      '<div id="terminNav">'+terminNavHtml()+'</div>');
+    ["ime","priimek","naslov","enota","postna","mesto","telefon","email"].forEach(function(id){var e=q$("#"+id);if(e)e.oninput=function(ev){s[id]=ev.target.value;if(id==="postna"||id==="mesto")refreshTerminNav();};});
+    q$("#datum").onchange=function(e){s.datum=e.target.value;s.cas="";refreshTimes();};
+    q$("#cas").onchange=function(e){s.cas=e.target.value;};
+    if(s.datum)refreshTimes();
+    bindTerminNav();
+  }
+  function timeOpts(blocked){var o="";for(var h=10;h<=14;h++){var t=(h<10?"0":"")+h+":00";var dis=blocked&&blocked[h]?" disabled":"";o+='<option value="'+t+'"'+dis+(s.cas===t?" selected":"")+'>'+t+(dis?" (zasedeno)":"")+'</option>';}return o;}
   function todayStr(){var d=new Date();var m=d.getMonth()+1,dd=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(dd<10?"0":"")+dd;}
-  async function blockedFor(date){var b={};if(!sb||!date)return b;try{var r=await sb.rpc("zasedeni_termini",{d:date});if(!r.error&&r.data){r.data.forEach(function(t){var h=parseInt(String(t).slice(0,2),10);if(!isNaN(h)){b[h-1]=1;b[h]=1;b[h+1]=1;}});}}catch(e){}return b;}
-  async function refreshTimes(){var sel=q$("#cas");if(!sel)return;var hint=q$("#casHint");if(!s.datum){sel.innerHTML='<option value="">Najprej izberi datum</option>';return;}if(hint)hint.textContent="Preverjam razpolozljivost...";var bl=await blockedFor(s.datum);if(bl[parseInt(s.cas,10)])s.cas="";sel.innerHTML='<option value="">Izberi uro</option>'+timeOpts(bl);sel.value=s.cas||"";if(hint)hint.textContent="Zasedeni termini so onemogoceni (kombi je rezerviran 2 uri).";}
+  async function blockedFor(date){var b={};if(!sb||!date)return b;try{var r=await sb.rpc("zasedeni_termini",{d:date});if(!r.error&&r.data){r.data.forEach(function(t){var h=parseInt(String(t).slice(0,2),10);if(!isNaN(h)){b[h]=1;}});}}catch(e){}return b;}
+  async function refreshTimes(){var sel=q$("#cas");if(!sel)return;var hint=q$("#casHint");if(!s.datum){sel.innerHTML='<option value="">Najprej izberi datum</option>';return;}if(hint)hint.textContent="Preverjam razpolozljivost...";var bl=await blockedFor(s.datum);if(bl[parseInt(s.cas,10)])s.cas="";sel.innerHTML='<option value="">Izberi uro</option>'+timeOpts(bl);sel.value=s.cas||"";if(hint)hint.textContent="Zasedeni termini so onemogočeni (dostava traja 1 uro).";}
 
   function summaryCard(){
     return '<div class="card summary"><h3>Povzetek naročila</h3>'+
@@ -141,7 +169,7 @@
       '<div class="srow"><div class="sk">Dodatki</div><div class="sv">'+extrasLabel()+'</div></div>'+
       '<div class="total"><span class="muted">Mesečno</span><span class="big">'+eur(monthly())+'</span></div></div>';
   }
-  function extrasLabel(){var a=[];if(s.extras.stopnice)a.push("stopnice");if(s.extras.krhko)a.push("krhko");if(s.extras.pomoc)a.push("pomoč pri polnjenju");return a.length?a.join(", "):"Brez";}
+  function extrasLabel(){var a=[];if(s.extras.stopnice)a.push("stopnice");if(s.extras.pomoc)a.push("pomoč pri polnjenju");return a.length?a.join(", "):"Brez";}
 
   // ---- POVZETEK ----
   function viewPovzetek(){
@@ -152,18 +180,56 @@
       kv("Paket",planLabel())+
       kv("Cena",cenaOpis())+
       kv("Stopnice (>2 nadstropji)",s.extras.stopnice?"Da":"Ne")+
-      kv("Krhki predmeti",s.extras.krhko?"Da":"Ne")+
       kv("Pomoč pri polnjenju",s.extras.pomoc?"Da (25 €/h)":"Ne")+
       kv("Opis lokacije",s.opis||"-")+
       kv("Naslov",(s.naslov||"-")+(s.enota?(", enota "+s.enota):""))+
+      kv("Poštna številka",s.postna||"-")+
+      kv("Mesto",s.mesto||"-")+
       kv("Telefon",s.telefon||"-")+
       kv("Termin",(s.datum||"-")+" "+(s.cas||""))+
       '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="next">Naprej na račun</button></div>');
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="inquiry">Oddaj povpraševanje</button><button class="btn" id="next">Registracija in plačilo</button></div></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="termin";route();};});
     q$("#next").onclick=function(){s.step="racun";route();};
+    var iq=q$("#inquiry");if(iq)iq.onclick=function(){s.step="povprasevanje";route();};
   }
   function kv(k,v){return '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>';}
+
+  // ---- POVPRAŠEVANJE ----
+  function viewPovprasevanje(){
+    render('<h1 class="co-title"><button class="back-inline" data-back>‹</button>Oddaj povpraševanje</h1>'+
+      '<p class="co-sub">Pustite sporočilo in kontaktirali vas bomo v najkrajšem možnem času.</p>'+
+      '<div class="card" style="max-width:560px;margin:0 auto">'+
+      '<div class="rowflex"><div class="field"><label>Ime</label><input id="pv_ime" value="'+esc(s.ime)+'" /></div>'+
+      '<div class="field"><label>Priimek</label><input id="pv_priimek" value="'+esc(s.priimek)+'" /></div></div>'+
+      '<div class="field"><label>E-pošta</label><input type="email" id="pv_email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div>'+
+      '<div class="field"><label>Telefon</label><input id="pv_telefon" value="'+esc(s.telefon)+'" placeholder="+386..." /></div>'+
+      '<div class="field"><label>Vprašanje</label><textarea id="pv_vprasanje" rows="4" placeholder="Kako vam lahko pomagamo?"></textarea></div>'+
+      '<div id="pv_err"></div>'+
+      '</div>'+
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="pvSend">Pošlji povpraševanje</button></div>');
+    q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="povzetek";route();};});
+    q$("#pvSend").onclick=submitPovprasevanje;
+  }
+  async function submitPovprasevanje(){
+    var ime=q$("#pv_ime").value.trim(),priimek=q$("#pv_priimek").value.trim(),email=q$("#pv_email").value.trim(),tel=q$("#pv_telefon").value.trim(),vpr=q$("#pv_vprasanje").value.trim();
+    if(!vpr){q$("#pv_err").innerHTML='<div class="alert err">Prosim vpiši vprašanje.</div>';return;}
+    var btn=q$("#pvSend");btn.disabled=true;btn.textContent="Pošiljam...";
+    s.ime=ime;s.priimek=priimek;s.email=email;s.telefon=tel;
+    var rec={ime:ime||null,priimek:priimek||null,email:email||null,telefon:tel||null,vprasanje:vpr,paket:planLabel(),tip:s.tip};
+    try{
+      if(!sb)throw new Error("Supabase ni na voljo.");
+      var r=await sb.from("povprasevanja").insert(rec);
+      if(r.error)throw r.error;
+      render('<div class="done-wrap"><div class="done-check">'+ICON.check+'</div>'+
+        '<h1 class="co-title">Hvala!</h1><p class="co-sub">Kontaktirali vas bomo v najkrajšem možnem času.</p>'+
+        '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a></div></div>');
+    }catch(e){
+      var body=encodeURIComponent("Ime: "+ime+" "+priimek+"\nE-pošta: "+email+"\nTelefon: "+tel+"\nPaket: "+planLabel()+" ("+(s.tip||"")+")\n\nVprašanje:\n"+vpr);
+      window.location.href="mailto:info@rabimbox.si?subject="+encodeURIComponent("Povpraševanje – Rabimbox")+"&body="+body;
+      btn.disabled=false;btn.textContent="Pošlji povpraševanje";
+    }
+  }
 
   // ---- RACUN ----
   function viewRačun(){ if(s.loggedIn) viewRačunPrijavljen(); else viewRačunGost(); }
@@ -223,8 +289,8 @@
       }
     }
     var rec={tip:s.tip,paket:planLabel(),st_boxov:(s.tip==="izposoja"?planObj().boxes:s.stBoxov),
-      cena_opis:cenaOpis(),stopnice:s.extras.stopnice,krhko:s.extras.krhko,pomoc_polnjenje:s.extras.pomoc,
-      opis_lokacije:s.opis||null,naslov:s.naslov||null,enota:s.enota||null,telefon:s.telefon||null,
+      cena_opis:cenaOpis(),stopnice:s.extras.stopnice,krhko:false,pomoc_polnjenje:s.extras.pomoc,
+      opis_lokacije:s.opis||null,naslov:s.naslov||null,enota:s.enota||null,postna_stevilka:s.postna||null,mesto:s.mesto||null,telefon:s.telefon||null,
       datum_dostave:s.datum||null,cas_dostave:s.cas||null,ime:s.ime||null,priimek:s.priimek||null,
       email:s.email,status:"novo"};
     try{
@@ -261,7 +327,7 @@
   }
 
   function infoBlock(){
-    return '<div class="info-2"><div><h4>Koliko prostora potrebujem?</h4><p>Shranjujete lahko do meje izbranega paketa. Pri skladiščenju je minimalno obdobje 3 mesece.</p></div>'+
+    return '<div class="info-2"><div><h4>Kakšne predmete lahko hranim?</h4><p>Shranite lahko večino gospodinjskih in pisarniških predmetov. Ne shranjujemo krhkih predmetov (steklo, porcelan, občutljiva elektronika brez zaščite) in predmetov, ki so z zakonom prepovedani (nevarne, vnetljive ali ilegalne snovi). Pri skladiščenju je minimalno obdobje 3 mesece.</p></div>'+
       '<div><h4>Prevzemi in dostave</h4><p>Dostave in prevzemi so od ponedeljka do sobote. Termin uskladimo vsaj 48 ur vnaprej.</p></div></div>';
   }
 
@@ -270,11 +336,13 @@
 
   function route(){
     window.scrollTo(0,0);
+    if(document.body)document.body.classList.toggle("bg-choice", s.step==="choice");
     if(s.step==="choice")viewChoice();
     else if(s.step==="paketi")viewPaketi();
     else if(s.step==="dodatki")viewDodatki();
     else if(s.step==="termin")viewTermin();
     else if(s.step==="povzetek")viewPovzetek();
+    else if(s.step==="povprasevanje")viewPovprasevanje();
     else if(s.step==="racun")viewRačun();
   }
 
