@@ -175,7 +175,7 @@ begin
      order by id limit n for update skip locked
   )
   update public.skatle s
-     set kupec_id = new.kupec_id, narocnina_id = nn, status = 'rezervirana', updated_at = now()
+     set kupec_id = new.kupec_id, narocnina_id = nn, status = 'rezervirana', tip_storitve = new.tip, updated_at = now()
     from pick where s.id = pick.id;
   return new;
 end;

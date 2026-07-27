@@ -67,12 +67,16 @@
     else if (v.includes("caka") || v.includes("čaka") || v.includes("nov")) c = "amber";
     return `<span class="badge ${c}">${esc(s || "-")}</span>`;
   }
-  async function hasUnpaidOrders() {
+  async function subBadgeFor(k) {
     try {
-      const email = (state.session && state.session.user && state.session.user.email) || (state.kupec && state.kupec.email) || "";
-      const { data } = await state.sb.from("narocila").select("status").eq("email", email);
-      return (data || []).some((o) => { const s = (o.status || "").toLowerCase(); return !s.includes("plac") && !s.includes("preklic") && !s.includes("zakljuc") && !s.includes("zaključ"); });
-    } catch (e) { return false; }
+      const email = (state.session && state.session.user && state.session.user.email) || (k && k.email) || "";
+      const { data } = await state.sb.from("narocila").select("placano,status").eq("email", email);
+      const orders = data || [];
+      const unpaid = orders.some((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
+      if (unpaid) return subStatusBadge("neaktivna");
+      if (orders.length) return subStatusBadge("aktivna");
+    } catch (e) {}
+    return subStatusBadge(k.status_narocnine);
   }
   const render = (h) => { APP.innerHTML = h; };
   const isStorage = (b) => (b.tip_storitve || "").toLowerCase().includes("sklad");
@@ -209,11 +213,13 @@
     const k = state.kupec;
     const [{ data: boxi = [] }, { data: narocila = [] }] = await Promise.all([q.boxi(), q.narocila()]);
     const email = (state.session && state.session.user && state.session.user.email) || k.email || "";
-    let neplacani = [];
+    let neplacani = [], ordersAll = [];
     try {
       const { data: ordersK } = await state.sb.from("narocila").select("*").eq("email", email).order("id", { ascending: false });
-      neplacani = (ordersK || []).filter((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
+      ordersAll = ordersK || [];
+      neplacani = ordersAll.filter((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
     } catch (e) {}
+    const subBadge = neplacani.length ? subStatusBadge("neaktivna") : (ordersAll.length ? subStatusBadge("aktivna") : subStatusBadge(k.status_narocnine));
     const parseAmt = (txt) => { if (!txt) return 0; const before = String(txt).split("/mesec")[0]; const nums = before.match(/\d+(?:[.,]\d+)?/g); if (!nums) return 0; const v = parseFloat(nums[nums.length - 1].replace(/\./g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
     const neplacanoSection = neplacani.length ? `<div class="card" style="border-radius:6px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Neplačana naročila</h3><button class="btn outline small" id="selAllUnpaid" type="button">Izberi vsa neplačana</button></div>
@@ -244,7 +250,7 @@
       ${neplacanoSection}
       ${choiceCards}
       <div class="card"><h3>Naročnina</h3>
-        <div class="kv"><span class="k">Status</span><span class="v">${subStatusBadge(k.status_narocnine)}</span></div>
+        <div class="kv"><span class="k">Status</span><span class="v">${subBadge}</span></div>
         <div class="kv"><span class="k">Začetek</span><span class="v">${fmtDate(k.datum_zacetka_narocnine)}</span></div>
         <div class="kv"><span class="k">Poteče / obnova</span><span class="v">${fmtDate(k.datum_konca_narocnine)}</span></div>
       </div>
@@ -339,8 +345,9 @@
 
   async function viewRacuni() {
     const k = state.kupec;
+    const statusBadge = await subBadgeFor(k);
     const subCard = `<div class="card"><h3>Naročnina</h3>
-      <div class="kv"><span class="k">Status</span><span class="v">${subStatusBadge(k.status_narocnine)}</span></div>
+      <div class="kv"><span class="k">Status</span><span class="v">${statusBadge}</span></div>
       <div class="kv"><span class="k">Začetek</span><span class="v">${fmtDate(k.datum_zacetka_narocnine)}</span></div>
       <div class="kv"><span class="k">Naslednja obnova / potek</span><span class="v">${fmtDate(k.datum_konca_narocnine)}</span></div></div>`;
     let racuni = null;
