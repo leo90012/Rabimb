@@ -15,7 +15,7 @@
     </nav>
     <div class="foot-copy">&copy;2024 Rabimbox. Vse pravice pridržane.</div>
   </footer>`;
-  const state = { sb: null, session: null, kupec: null, tab: "nadzor", hasRacuni: null };
+  const state = { sb: null, session: null, kupec: null, tab: "nadzor", hasRacuni: null, boxView: null };
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -212,7 +212,7 @@
     let neplacani = [];
     try {
       const { data: ordersK } = await state.sb.from("narocila").select("*").eq("email", email).order("id", { ascending: false });
-      neplacani = (ordersK || []).filter((o) => { const s = (o.status || "").toLowerCase(); return !s.includes("plac") && !s.includes("preklic") && !s.includes("zakljuc") && !s.includes("zaključ"); });
+      neplacani = (ordersK || []).filter((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
     } catch (e) {}
     const parseAmt = (txt) => { if (!txt) return 0; const before = String(txt).split("/mesec")[0]; const nums = before.match(/\d+(?:[.,]\d+)?/g); if (!nums) return 0; const v = parseFloat(nums[nums.length - 1].replace(/\./g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
     const neplacanoSection = neplacani.length ? `<div class="card" style="border-radius:6px">
@@ -229,17 +229,19 @@
       <span class="s">${cleanLoc(b.lokacija) ? esc(b.lokacija) : "Lokacija ni določena"} · Naročnina do: ${fmtDate(state.kupec.datum_konca_narocnine)}</span></span>
       <span class="end">${boxStatusBadge(b.status)}</span></label>`;
     const group = (title, arr, gkey) => arr.length ? `<div class="section-title">${title} (${arr.length})${gkey === "skl" ? ` <button class="btn outline small" id="selAllSkl" type="button" style="margin-left:8px">Izberi vse v skladišču</button>` : ""}</div><div class="card"${gkey ? ` data-group="${gkey}"` : ""}>${arr.map(rowH).join("")}</div>` : "";
-    const boxiSection = boxi.length
-      ? `<p class="page-sub">Izberi bokse, ki jih želiš dostaviti, in oddaj naročilo.</p>${group("V skladišču", skl, "skl")}${group("V najemu / izposoji", naj)}`
-      : `<p class="page-sub">Pregled tvojih boxov in naročnine.</p><div class="empty"><p>Trenutno nimaš aktivnih boxov.</p><button class="btn primary auto mt" id="newOrderEmpty" style="margin:12px auto 0">Naroči dostavo</button></div>`;
-    const choiceCards = `<div class="nadzor-choice"><a class="nchoice" href="../narocilo/index.html?tip=izposoja"><span class="t">Izposoja</span><span class="d">Najem boxov za selitev</span></a><a class="nchoice" href="../narocilo/index.html?tip=skladiscenje"><span class="t">Skladiščenje</span><span class="d">Shranjevanje na zahtevo</span></a></div>`;
+    let boxiSection;
+    if (!boxi.length) {
+      boxiSection = `<p class="page-sub">Pregled tvojih boxov in naročnine.</p><div class="empty"><p>Trenutno nimaš aktivnih boxov.</p><button class="btn primary auto mt" id="newOrderEmpty" style="margin:12px auto 0">Naroči dostavo</button></div>`;
+    } else if (state.boxView === "skl") {
+      boxiSection = `<p class="page-sub">Boxi v skladišču — izberi in oddaj naročilo za dostavo.</p>${group("V skladišču", skl, "skl")}`;
+    } else if (state.boxView === "naj") {
+      boxiSection = `<p class="page-sub">Boxi v najemu — izberi in oddaj naročilo za dostavo.</p>${group("V najemu / izposoji", naj, "naj")}`;
+    } else {
+      boxiSection = `<p class="page-sub">Klikni <b>Izposoja</b> ali <b>Skladiščenje</b> zgoraj za prikaz svojih boxov.</p>`;
+    }
+    const choiceCards = `<div class="nadzor-choice"><div class="nchoice${state.boxView === "naj" ? " active" : ""}" data-view="naj"><span class="cnt">${naj.length}</span><span class="t">Izposoja</span><span class="d">Boxi v najemu</span></div><div class="nchoice${state.boxView === "skl" ? " active" : ""}" data-view="skl"><span class="cnt">${skl.length}</span><span class="t">Skladiščenje</span><span class="d">Boxi v skladišču</span></div></div>`;
     return `${pageHead("nadzor")}
       ${neplacanoSection}
-      <div class="stats">
-        <div class="stat"><div class="n">${skl.length}</div><div class="l">V skladišču</div></div>
-        <div class="stat"><div class="n">${naj.length}</div><div class="l">V najemu</div></div>
-        <div class="stat"><div class="n">${aktivna}</div><div class="l">Aktivna naročila</div></div>
-      </div>
       ${choiceCards}
       <div class="card"><h3>Naročnina</h3>
         <div class="kv"><span class="k">Status</span><span class="v">${subStatusBadge(k.status_narocnine)}</span></div>
@@ -252,6 +254,11 @@
   function wireNadzor() {
     const bar = $("#deliverBar"), btn = $("#deliverBtn"), empty = $("#newOrderEmpty");
     if (empty) empty.addEventListener("click", () => newOrder());
+    $$(".nchoice[data-view]").forEach((c) => c.addEventListener("click", () => {
+      const v = c.getAttribute("data-view");
+      state.boxView = (state.boxView === v) ? null : v;
+      renderTab();
+    }));
     const update = () => {
       const sel = $$(".box-check:checked");
       if (!btn) return;

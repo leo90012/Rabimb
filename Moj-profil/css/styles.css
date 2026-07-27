@@ -243,6 +243,9 @@ svg { display: block; }
 @media (max-width: 560px) { .nadzor-choice { grid-template-columns: 1fr; } }
 .nadzor-choice .nchoice { display: block; background: #fff; border: 1px solid var(--line, #e5e8ee); border-radius: 12px; box-shadow: 0 1px 3px rgba(16,24,40,.07); padding: 20px; text-align: center; text-decoration: none; transition: border-color .15s, box-shadow .15s, transform .1s; }
 .nadzor-choice .nchoice:hover { border-color: #6ec1e4; box-shadow: 0 10px 30px rgba(16,24,40,.10); transform: translateY(-2px); }
+.nadzor-choice .nchoice { cursor: pointer; }
+.nadzor-choice .nchoice.active { border-color: #0067ff; box-shadow: 0 0 0 3px rgba(0,103,255,.14); }
+.nadzor-choice .nchoice .cnt { display: block; font-weight: 700; font-size: 30px; line-height: 1; color: #0067ff; margin-bottom: 4px; }
 .nadzor-choice .nchoice .t { display: block; font-weight: 700; font-size: 18px; color: #2a3342; }
 .nadzor-choice .nchoice .d { display: block; color: #7b8794; font-size: 13px; margin-top: 4px; }
 .kv { display: flex; justify-content: space-between; align-items: center;
