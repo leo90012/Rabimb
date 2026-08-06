@@ -167,7 +167,8 @@
       '<div class="srow"><div class="sk">Storitev</div><div class="sv">'+(s.tip==="izposoja"?"Izposoja":"Skladiščenje")+'</div></div>'+
       '<div class="srow"><div class="sk">Paket</div><div class="sv">'+esc(planLabel())+'</div></div>'+
       '<div class="srow"><div class="sk">Dodatki</div><div class="sv">'+extrasLabel()+'</div></div>'+
-      '<div class="total"><span class="muted">Mesečno</span><span class="big">'+eur(monthly())+'</span></div></div>';
+      '<div class="total"><span class="muted">Mesečno</span><span class="big">'+eur(monthly())+'</span></div>'+
+      '<input type="text" id="hp_order" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" /></div>';
   }
   function extrasLabel(){var a=[];if(s.extras.stopnice)a.push("stopnice");if(s.extras.pomoc)a.push("pomoč pri polnjenju");return a.length?a.join(", "):"Brez";}
 
@@ -205,13 +206,14 @@
       '<div class="field"><label>E-pošta</label><input type="email" id="pv_email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div>'+
       '<div class="field"><label>Telefon</label><input id="pv_telefon" value="'+esc(s.telefon)+'" placeholder="+386..." /></div>'+
       '<div class="field"><label>Vprašanje</label><textarea id="pv_vprasanje" rows="4" placeholder="Kako vam lahko pomagamo?"></textarea></div>'+
-      '<div id="pv_err"></div>'+
+      '<input type="text" id="hp_pv" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" /><div id="pv_err"></div>'+
       '</div>'+
       '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="pvSend">Pošlji povpraševanje</button></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="povzetek";route();};});
     q$("#pvSend").onclick=submitPovprasevanje;
   }
   async function submitPovprasevanje(){
+    if(q$("#hp_pv")&&q$("#hp_pv").value){return;}
     var ime=q$("#pv_ime").value.trim(),priimek=q$("#pv_priimek").value.trim(),email=q$("#pv_email").value.trim(),tel=q$("#pv_telefon").value.trim(),vpr=q$("#pv_vprasanje").value.trim();
     if(!vpr){q$("#pv_err").innerHTML='<div class="alert err">Prosim vpiši vprašanje.</div>';return;}
     var btn=q$("#pvSend");btn.disabled=true;btn.textContent="Pošiljam...";
@@ -274,6 +276,7 @@
   }
 
   async function submit(){
+    var _hp=q$("#hp_order"); if(_hp&&_hp.value){return;}
     if(!s.email||s.email.indexOf("@")<0){alert("Prosim vpiši veljaven e-naslov.");return;}
     if(!s.loggedIn){
       if(!s.geslo||s.geslo.length<6){alert("Vpiši geslo (vsaj 6 znakov).");return;}
@@ -348,12 +351,14 @@
 
   function loadKupci(email){
     if(!sb||!email)return Promise.resolve();
-    return sb.from("kupci").select("ime,priimek,telefon,naslov").eq("email",email).limit(1).maybeSingle().then(function(kr){
+    return sb.from("kupci").select("ime,priimek,telefon,naslov,postna_stevilka,kraj").eq("email",email).limit(1).maybeSingle().then(function(kr){
       if(kr&&kr.data){
         if(!s.ime)s.ime=kr.data.ime||"";
         if(!s.priimek)s.priimek=kr.data.priimek||"";
         if(!s.telefon)s.telefon=kr.data.telefon||"";
         if(!s.naslov)s.naslov=kr.data.naslov||"";
+        if(!s.postna)s.postna=kr.data.postna_stevilka||"";
+        if(!s.mesto)s.mesto=kr.data.kraj||"";
       }
     }).catch(function(){});
   }

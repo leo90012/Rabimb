@@ -184,6 +184,28 @@ drop trigger if exists trg_narocilo_dodeli_skatle on public.narocila;
 create trigger trg_narocilo_dodeli_skatle after insert on public.narocila
   for each row execute function public.narocilo_dodeli_skatle();
 
+-- ------------------------------------------------------------
+-- 4d) Ob naročilu shrani naslov/poštno/mesto/telefon v kupci
+--     (da se ob naslednjem naročilu samodejno napolnijo)
+-- ------------------------------------------------------------
+create or replace function public.narocilo_posodobi_naslov()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.kupec_id is not null then
+    update public.kupci set
+      postna_stevilka = coalesce(nullif(new.postna_stevilka,''), postna_stevilka),
+      kraj            = coalesce(nullif(new.mesto,''), kraj),
+      naslov          = coalesce(nullif(new.naslov,''), naslov),
+      telefon         = coalesce(nullif(new.telefon,''), telefon)
+    where id = new.kupec_id;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_narocilo_posodobi_naslov on public.narocila;
+create trigger trg_narocilo_posodobi_naslov after insert on public.narocila
+  for each row execute function public.narocilo_posodobi_naslov();
+
 -- ============================================================
 -- 5) DNEVNIK SKENIRANJ / DOGODKI V SKLADIŠČU
 -- ============================================================

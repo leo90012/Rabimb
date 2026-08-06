@@ -15,7 +15,7 @@
     </nav>
     <div class="foot-copy">&copy;2024 Rabimbox. Vse pravice pridržane.</div>
   </footer>`;
-  const state = { sb: null, session: null, kupec: null, tab: "nadzor", hasRacuni: null, boxView: null };
+  const state = { sb: null, session: null, kupec: null, tab: "nadzor", hasRacuni: null, boxView: null, narocnine: null };
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -45,26 +45,68 @@
     t.textContent = msg; t.classList.add("show");
     clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2600);
   }
+  // Interni statusi skladišča -> kaj vidi stranka (glej sql/integracija.sql)
+  const BOX_STATUS = {
+    na_zalogi:    { label: "Pripravljeno za dostavo", color: "blue" },
+    rezervirana:  { label: "Pripravljeno za dostavo", color: "blue" },
+    v_transportu: { label: "Na poti",                 color: "amber" },
+    pri_stranki:  { label: "Pri vas",                 color: "green" },
+    v_skladiscu:  { label: "V skladišču",             color: "blue" },
+    poskodovana:  { label: "V pregledu",              color: "gray" },
+    umaknjena:    { label: "Umaknjeno",               color: "gray" },
+  };
+  // Boxi, ki jih stranki ne prikazujemo
+  const BOX_SKRIJ = new Set(["umaknjena"]);
   function boxStatusBadge(s) {
-    const v = (s || "").toLowerCase(); let c = "gray";
-    if (v.includes("prost")) c = "green";
-    else if (v.includes("zaseden") || v.includes("skladi")) c = "blue";
-    else if (v.includes("dostav") || v.includes("izpos")) c = "amber";
+    const key = String(s || "").toLowerCase();
+    const m = BOX_STATUS[key];
+    if (m) return `<span class="badge ${m.color}">${esc(m.label)}</span>`;
+    // varovalo za morebitne stare/nepoznane vrednosti
+    let c = "gray";
+    if (key.includes("prost")) c = "green";
+    else if (key.includes("zaseden") || key.includes("skladi")) c = "blue";
+    else if (key.includes("dostav") || key.includes("izpos")) c = "amber";
     return `<span class="badge ${c}">${esc(s || "neznano")}</span>`;
   }
+
+  const REQ_STATUS = {
+    nova:        { label: "Oddano",      color: "amber" },
+    novo:        { label: "Oddano",      color: "amber" },
+    potrjena:    { label: "Potrjeno",    color: "blue" },
+    potrjeno:    { label: "Potrjeno",    color: "blue" },
+    v_izvajanju: { label: "V izvajanju", color: "blue" },
+    zakljucena:  { label: "Zaključeno",  color: "green" },
+    zakljuceno:  { label: "Zaključeno",  color: "green" },
+    preklicana:  { label: "Preklicano",  color: "red" },
+    preklicano:  { label: "Preklicano",  color: "red" },
+  };
   function reqStatusBadge(s) {
-    const v = (s || "").toLowerCase(); let c = "gray";
-    if (v.includes("nov") || v.includes("caka") || v.includes("čaka")) c = "amber";
-    else if (v.includes("obdel") || v.includes("potrj") || v.includes("pot")) c = "blue";
-    else if (v.includes("zakljuc") || v.includes("zaključ") || v.includes("dostavlj") || v.includes("opravlj")) c = "green";
-    else if (v.includes("preklic") || v.includes("zavrn")) c = "red";
+    const key = String(s || "nova").toLowerCase();
+    const m = REQ_STATUS[key];
+    if (m) return `<span class="badge ${m.color}">${esc(m.label)}</span>`;
+    let c = "gray";
+    if (key.includes("nov") || key.includes("caka") || key.includes("čaka")) c = "amber";
+    else if (key.includes("obdel") || key.includes("potrj")) c = "blue";
+    else if (key.includes("zakljuc") || key.includes("zaključ") || key.includes("dostavlj")) c = "green";
+    else if (key.includes("preklic") || key.includes("zavrn")) c = "red";
     return `<span class="badge ${c}">${esc(s || "nova")}</span>`;
   }
+
+  const SUB_STATUS = {
+    aktivna:    { label: "Aktivna",    color: "green" },
+    pavza:      { label: "Na pavzi",   color: "amber" },
+    neaktivna:  { label: "Neaktivna",  color: "red" },
+    zakljucena: { label: "Zaključena", color: "gray" },
+    preklicana: { label: "Preklicana", color: "red" },
+  };
   function subStatusBadge(s) {
-    const v = (s || "").toLowerCase(); let c = "gray";
-    if (v.includes("preklic") || v.includes("potek") || v.includes("neaktiv")) c = "red";
-    else if (v.includes("aktiv")) c = "green";
-    else if (v.includes("caka") || v.includes("čaka") || v.includes("nov")) c = "amber";
+    const key = String(s || "").toLowerCase();
+    const m = SUB_STATUS[key];
+    if (m) return `<span class="badge ${m.color}">${esc(m.label)}</span>`;
+    let c = "gray";
+    if (key.includes("preklic") || key.includes("potek") || key.includes("neaktiv")) c = "red";
+    else if (key.includes("aktiv")) c = "green";
+    else if (key.includes("caka") || key.includes("čaka") || key.includes("nov")) c = "amber";
     return `<span class="badge ${c}">${esc(s || "-")}</span>`;
   }
   async function subBadgeFor(k) {
@@ -205,13 +247,37 @@
     }
   }
   const q = {
-    boxi: () => state.sb.from("skatle").select("*").eq("kupec_id", state.kupec.id).order("id"),
+    // pogled moje_skatle doda datume naročnine (sql/integracija.sql); ob napaki pade nazaj na skatle
+    boxi: async () => {
+      const v = await state.sb.from("moje_skatle").select("*").eq("kupec_id", state.kupec.id).order("id");
+      if (!v.error) return v;
+      return state.sb.from("skatle").select("*").eq("kupec_id", state.kupec.id).order("id");
+    },
     narocila: () => state.sb.from("zahteve_dostave").select("*").eq("kupec_id", state.kupec.id).order("datum_zahteve", { ascending: false }),
+    narocnine: () => state.sb.from("narocnine").select("*").eq("kupec_id", state.kupec.id).order("datum_do", { ascending: false }),
   };
+  // Veljavnost naročnine: vir resnice je tabela narocnine, kupci.* je samo odsev
+  function narocninaDo(box) {
+    if (box && box.narocnina_do) return box.narocnina_do;
+    const n = (state.narocnine || []).filter((x) => (x.status || "") === "aktivna");
+    if (box && box.narocnina_id) {
+      const m = (state.narocnine || []).find((x) => Number(x.id) === Number(box.narocnina_id));
+      if (m) return m.datum_do;
+    }
+    if (n.length) return n.map((x) => x.datum_do).filter(Boolean).sort().pop();
+    return state.kupec ? state.kupec.datum_konca_narocnine : null;
+  }
+  function narocninaOd() {
+    const n = (state.narocnine || []).filter((x) => (x.status || "") === "aktivna");
+    if (n.length) return n.map((x) => x.datum_od).filter(Boolean).sort()[0];
+    return state.kupec ? state.kupec.datum_zacetka_narocnine : null;
+  }
 
   async function viewNadzor() {
     const k = state.kupec;
-    const [{ data: boxi = [] }, { data: narocila = [] }] = await Promise.all([q.boxi(), q.narocila()]);
+    const [{ data: boxiAll = [] }, { data: narocila = [] }, narRes] = await Promise.all([q.boxi(), q.narocila(), Promise.resolve(q.narocnine()).catch(() => ({ data: [] }))]);
+    state.narocnine = (narRes && narRes.data) || [];
+    const boxi = (boxiAll || []).filter((b) => !BOX_SKRIJ.has(String(b.status || "").toLowerCase()));
     const email = (state.session && state.session.user && state.session.user.email) || k.email || "";
     let neplacani = [], ordersAll = [];
     try {
@@ -232,7 +298,7 @@
     const aktivna = narocila.filter((z) => { const s = (z.status || "").toLowerCase(); return !s.includes("zakljuc") && !s.includes("zaključ") && !s.includes("preklic") && !s.includes("dostavlj"); }).length;
     const rowH = (b) => `<label class="row selectable"><input type="checkbox" class="check box-check" value="${b.id}" />
       <span class="main"><span class="t">Box #${b.id}${b.velikost ? ` <span class="muted">- ${esc(b.velikost)}</span>` : ""}</span>
-      <span class="s">${cleanLoc(b.lokacija) ? esc(b.lokacija) : "Lokacija ni določena"} · Naročnina do: ${fmtDate(state.kupec.datum_konca_narocnine)}</span></span>
+      <span class="s">${cleanLoc(b.lokacija) ? esc(b.lokacija) : "Lokacija ni določena"}${narocninaDo(b) ? ` · Naročnina do: ${fmtDate(narocninaDo(b))}` : ""}</span></span>
       <span class="end">${boxStatusBadge(b.status)}</span></label>`;
     const group = (title, arr, gkey) => arr.length ? `<div class="section-title">${title} (${arr.length})${gkey === "skl" ? ` <button class="btn outline small" id="selAllSkl" type="button" style="margin-left:8px">Izberi vse v skladišču</button>` : ""}</div><div class="card"${gkey ? ` data-group="${gkey}"` : ""}>${arr.map(rowH).join("")}</div>` : "";
     let boxiSection;
@@ -251,8 +317,8 @@
       ${choiceCards}
       <div class="card"><h3>Naročnina</h3>
         <div class="kv"><span class="k">Status</span><span class="v">${subBadge}</span></div>
-        <div class="kv"><span class="k">Začetek</span><span class="v">${fmtDate(k.datum_zacetka_narocnine)}</span></div>
-        <div class="kv"><span class="k">Poteče / obnova</span><span class="v">${fmtDate(k.datum_konca_narocnine)}</span></div>
+        <div class="kv"><span class="k">Začetek</span><span class="v">${fmtDate(narocninaOd())}</span></div>
+        <div class="kv"><span class="k">Poteče / obnova</span><span class="v">${fmtDate(narocninaDo())}</span></div>
       </div>
       ${boxiSection}
       <div class="deliver-bar" id="deliverBar"><div class="inner"><button class="btn gray" id="deliverBtn" disabled>Naroči dostavo izbranih</button></div></div>`;
@@ -346,10 +412,11 @@
   async function viewRacuni() {
     const k = state.kupec;
     const statusBadge = await subBadgeFor(k);
+    if (!state.narocnine) { const nr = await Promise.resolve(q.narocnine()).catch(() => ({ data: [] })); state.narocnine = (nr && nr.data) || []; }
     const subCard = `<div class="card"><h3>Naročnina</h3>
       <div class="kv"><span class="k">Status</span><span class="v">${statusBadge}</span></div>
-      <div class="kv"><span class="k">Začetek</span><span class="v">${fmtDate(k.datum_zacetka_narocnine)}</span></div>
-      <div class="kv"><span class="k">Naslednja obnova / potek</span><span class="v">${fmtDate(k.datum_konca_narocnine)}</span></div></div>`;
+      <div class="kv"><span class="k">Začetek</span><span class="v">${fmtDate(narocninaOd())}</span></div>
+      <div class="kv"><span class="k">Naslednja obnova / potek</span><span class="v">${fmtDate(narocninaDo())}</span></div></div>`;
     let racuni = null;
     try {
       const { data, error } = await state.sb.from("racuni").select("*").eq("kupec_id", k.id).order("datum_izdaje", { ascending: false });
@@ -362,11 +429,14 @@
     return pageHead("racuni") + subCard + body;
   }
   function racRow(r) {
+    const paid = /plac|plač|paid/i.test(r.status || "");
+    const overdue = !paid && r.datum_zapadlosti && (new Date(r.datum_zapadlosti) < new Date(new Date().toDateString()));
+    const badge = overdue ? `<span class="badge red">zapadlo</span>` : racStatusBadge(r.status);
     return `<div class="row"><span class="ico">${ICON.receipt}</span>
       <div class="main"><div class="t">${esc(r.stevilka || "Račun #" + r.id)}</div>
       <div class="s">Izdan: ${fmtDate(r.datum_izdaje)}${r.datum_zapadlosti ? " - Zapadlost: " + fmtDate(r.datum_zapadlosti) : ""}</div></div>
       <div class="end"><div style="font-weight:700;color:var(--heading)">${money(r.znesek, r.valuta || "EUR")}</div>
-      <div style="margin-top:4px">${racStatusBadge(r.status)}</div>
+      <div style="margin-top:4px">${badge}</div>
       ${r.url_pdf ? `<div style="margin-top:6px"><a href="${esc(r.url_pdf)}" target="_blank" rel="noopener">PDF</a></div>` : ""}</div></div>`;
   }
   function racStatusBadge(s) {
