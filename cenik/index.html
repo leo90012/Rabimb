@@ -161,7 +161,29 @@ html, body {
   margin-top: 0 !important;
 }
 </style>
-<style id="rb-fix">.menu-link{font-size:14px !important;}.trp-language-switcher-container{display:none !important;}</style><style id="rb-footer-align">#astra-footer-menu .menu-item-mojprofil{order:98}#astra-footer-menu .menu-item-narocizdaj{order:99}@media (min-width:769px){#astra-footer-menu .menu-item-mojprofil{margin-left:auto}}</style>
+<style id="rb-fix">.menu-link{font-size:14px !important;}.trp-language-switcher-container{display:none !important;}</style><style id="rb-custom">
+.rb-hide{display:none!important}
+.menu-item-narocizdaj > a{background:#6ec1e4;color:#fff!important;border-radius:6px;padding:8px 18px!important;font-weight:700}
+.menu-item-narocizdaj > a:hover{background:#54b1d9;color:#fff!important}
+#astra-footer-menu{display:none!important}
+#rb-footer{display:flex;flex-wrap:wrap;gap:48px;justify-content:center;text-align:left;padding:6px 20px 10px}
+#rb-footer .col h4{font-family:'Lexend',sans-serif;font-size:15px;font-weight:700;margin:0 0 10px}
+#rb-footer .col a{display:block;text-decoration:none;color:inherit;opacity:.85;font-size:14px;line-height:2}
+#rb-footer .col a:hover{opacity:1;text-decoration:underline}
+@media(max-width:600px){#rb-footer{gap:28px;text-align:center}}
+</style>
+<script>
+(function(){function run(){try{
+document.querySelectorAll('a[href$="cenik/index.html"]').forEach(function(a){var li=a.closest('li');if(li&&!li.closest('#astra-footer-menu'))li.classList.add('rb-hide');});
+var fm=document.getElementById('astra-footer-menu');
+if(fm&&!document.getElementById('rb-footer')){var map={};fm.querySelectorAll('a').forEach(function(a){map[a.textContent.trim().toLowerCase()]=a.getAttribute('href');});
+function L(t,k){var h=map[k];return h?('<a href="'+h+'">'+t+'</a>'):'';}
+var f=document.createElement('div');f.id='rb-footer';
+f.innerHTML='<div class="col"><h4>Več informacij</h4>'+L('Skladiščenje','skladiščenje')+L('Izposoja','izposoja')+L('Cenik','cenik')+L('Pravila in pogoji','pravila in pogoji')+'</div>'+'<div class="col"><h4>O nas</h4>'+L('O nas','o nas')+L('Blog','blog')+'</div>'+'<div class="col"><h4>Kontakt</h4><a href="tel:+38640796040">+386 (0)40 796 040</a><a href="mailto:info@rabimbox.si">info@rabimbox.si</a></div>';
+fm.parentNode.insertBefore(f,fm);}
+}catch(e){}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
+</script>
 </head>
 
 <body itemtype='https://schema.org/WebPage' itemscope='itemscope' class="wp-singular page-template-default page page-id-1923 wp-custom-logo wp-embed-responsive wp-theme-astra cookies-not-set translatepress-sl_SI ast-desktop ast-page-builder-template ast-no-sidebar astra-4.13.6 ast-single-post ast-inherit-site-logo-transparent ast-theme-transparent-header ast-hfb-header elementor-default elementor-kit-1659 elementor-page elementor-page-1923">
@@ -406,32 +428,7 @@ class="post-1923 page type-page status-publish ast-article-single" id="post-1923
 				</div>
 				</div>
 		<div class="elementor-element elementor-element-739364ce e-con-full e-flex e-con e-child" data-id="739364ce" data-element_type="container" data-e-type="container">
-				<div class="elementor-element elementor-element-7096e429 elementor-widget elementor-widget-heading" data-id="7096e429" data-element_type="widget" data-e-type="widget" data-widget_type="heading.default">
-				<div class="elementor-widget-container">
-					<h3 class="elementor-heading-title elementor-size-default">Rezerviraj svoje boxe</h3>				</div>
-				</div>
-				<div class="elementor-element elementor-element-47e58a81 elementor-align-center elementor-mobile-align-start elementor-icon-list--layout-traditional elementor-list-item-link-full_width elementor-widget elementor-widget-icon-list" data-id="47e58a81" data-element_type="widget" data-e-type="widget" data-widget_type="icon-list.default">
-				<div class="elementor-widget-container">
-							<ul class="elementor-icon-list-items">
-							<li class="elementor-icon-list-item">
-											<a href="tel:+386%2040%20796%20040">
-
-												<span class="elementor-icon-list-icon">
-							<svg aria-hidden="true" class="e-font-icon-svg e-fas-phone-volume" viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg"><path d="M97.333 506.966c-129.874-129.874-129.681-340.252 0-469.933 5.698-5.698 14.527-6.632 21.263-2.422l64.817 40.513a17.187 17.187 0 0 1 6.849 20.958l-32.408 81.021a17.188 17.188 0 0 1-17.669 10.719l-55.81-5.58c-21.051 58.261-20.612 122.471 0 179.515l55.811-5.581a17.188 17.188 0 0 1 17.669 10.719l32.408 81.022a17.188 17.188 0 0 1-6.849 20.958l-64.817 40.513a17.19 17.19 0 0 1-21.264-2.422zM247.126 95.473c11.832 20.047 11.832 45.008 0 65.055-3.95 6.693-13.108 7.959-18.718 2.581l-5.975-5.726c-3.911-3.748-4.793-9.622-2.261-14.41a32.063 32.063 0 0 0 0-29.945c-2.533-4.788-1.65-10.662 2.261-14.41l5.975-5.726c5.61-5.378 14.768-4.112 18.718 2.581zm91.787-91.187c60.14 71.604 60.092 175.882 0 247.428-4.474 5.327-12.53 5.746-17.552.933l-5.798-5.557c-4.56-4.371-4.977-11.529-.93-16.379 49.687-59.538 49.646-145.933 0-205.422-4.047-4.85-3.631-12.008.93-16.379l5.798-5.557c5.022-4.813 13.078-4.394 17.552.933zm-45.972 44.941c36.05 46.322 36.108 111.149 0 157.546-4.39 5.641-12.697 6.251-17.856 1.304l-5.818-5.579c-4.4-4.219-4.998-11.095-1.285-15.931 26.536-34.564 26.534-82.572 0-117.134-3.713-4.836-3.115-11.711 1.285-15.931l5.818-5.579c5.159-4.947 13.466-4.337 17.856 1.304z"></path></svg>						</span>
-										<span class="elementor-icon-list-text">+386 (0)40 796 040</span>
-											</a>
-									</li>
-								<li class="elementor-icon-list-item">
-											<a href="mailto:info@rabimbox.si">
-
-												<span class="elementor-icon-list-icon">
-							<svg aria-hidden="true" class="e-font-icon-svg e-far-envelope" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm0 48v40.805c-22.422 18.259-58.168 46.651-134.587 106.49-16.841 13.247-50.201 45.072-73.413 44.701-23.208.375-56.579-31.459-73.413-44.701C106.18 199.465 70.425 171.067 48 152.805V112h416zM48 400V214.398c22.914 18.251 55.409 43.862 104.938 82.646 21.857 17.205 60.134 55.186 103.062 54.955 42.717.231 80.509-37.199 103.053-54.947 49.528-38.783 82.032-64.401 104.947-82.653V400H48z"></path></svg>						</span>
-										<span class="elementor-icon-list-text">info@rabimbox.si</span>
-											</a>
-									</li>
-						</ul>
-						</div>
-				</div>
+				
 				</div>
 					</div>
 				</div>
