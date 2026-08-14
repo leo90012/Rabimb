@@ -116,7 +116,9 @@
       const { data } = await state.sb.from("narocila").select("placano,status").eq("email", email);
       const orders = data || [];
       const unpaid = orders.some((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
+      const started = (state.narocnine || []).some((x) => x.datum_od && String(x.status || "").toLowerCase() === "aktivna");
       if (unpaid) return subStatusBadge("neaktivna");
+      if (started) return subStatusBadge("aktivna");
       if (orders.length) return subStatusBadge("v dostavi");
     } catch (e) {}
     return subStatusBadge(k.status_narocnine);
@@ -285,7 +287,8 @@
       ordersAll = ordersK || [];
       neplacani = ordersAll.filter((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
     } catch (e) {}
-    const subBadge = neplacani.length ? subStatusBadge("neaktivna") : (ordersAll.length ? subStatusBadge("v dostavi") : subStatusBadge(k.status_narocnine));
+    const subStarted = (state.narocnine || []).some((x) => x.datum_od && String(x.status || "").toLowerCase() === "aktivna");
+    const subBadge = neplacani.length ? subStatusBadge("neaktivna") : (subStarted ? subStatusBadge("aktivna") : (ordersAll.length ? subStatusBadge("v dostavi") : subStatusBadge(k.status_narocnine)));
     const parseAmt = (txt) => { if (!txt) return 0; const before = String(txt).split("/mesec")[0]; const nums = before.match(/\d+(?:[.,]\d+)?/g); if (!nums) return 0; const v = parseFloat(nums[nums.length - 1].replace(/\./g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
     const neplacanoSection = neplacani.length ? `<div class="card" style="border-radius:6px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Neplačana naročila</h3><button class="btn outline small" id="selAllUnpaid" type="button">Izberi vsa neplačana</button></div>
