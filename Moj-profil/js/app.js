@@ -292,7 +292,7 @@
     const parseAmt = (txt) => { if (!txt) return 0; const before = String(txt).split("/mesec")[0]; const nums = before.match(/\d+(?:[.,]\d+)?/g); if (!nums) return 0; const v = parseFloat(nums[nums.length - 1].replace(/\./g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
     const neplacanoSection = neplacani.length ? `<div class="card" style="border-radius:6px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Neplačana naročila</h3><button class="btn outline small" id="selAllUnpaid" type="button">Izberi vsa neplačana</button></div>
-      ${neplacani.map((o) => `<label class="row selectable"><input type="checkbox" class="check unpaid-check" value="${o.id}" data-amount="${parseAmt(o.cena_opis)}" />
+      ${neplacani.map((o) => `<label class="row selectable"><input type="checkbox" class="check unpaid-check" value="${o.id}" data-amount="${parseAmt(o.cena_opis)}" data-ref="${esc(o.stevilka || "")}" />
         <span class="main"><span class="t">Naročilo ${esc(o.stevilka || ("#" + o.id))} <span style="background:#fdeceb;color:#a01810;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:4px">Ni plačano</span></span>
         <span class="s">${esc(o.paket || "")}${o.cena_opis ? " - " + esc(o.cena_opis) : ""}</span></span></label>`).join("")}
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap"><div class="muted" id="unpaidTotal">Izbrano: 0,00 €</div><button class="btn primary" id="payUnpaid" disabled>Plačilo izbranih (0)</button></div>
@@ -362,7 +362,26 @@
       unpaidChecks.forEach((c) => { c.checked = !allChecked; });
       updUnpaid();
     });
-    if (payUnpaid) payUnpaid.addEventListener("click", () => toast("Plačilo (Stripe) bo kmalu na voljo."));
+    if (payUnpaid) payUnpaid.addEventListener("click", async () => {
+      const sel = $$(".unpaid-check:checked");
+      const refs = sel.map((c) => c.getAttribute("data-ref")).filter((x) => x);
+      if (!refs.length) { toast("Izberi vsaj eno neplačano naročilo."); return; }
+      const ref = refs[0];
+      if (refs.length > 1) toast("Plačilo poteka po enem naročilu. Preusmerjam na plačilo prvega izbranega; ostala plačaj po vrnitvi.");
+      payUnpaid.disabled = true; payUnpaid.textContent = "Preusmerjam...";
+      const slugs = ["rapid-api", "stripe-checkout", "Stripe-checkout"];
+      let lastErr = null;
+      for (const slug of slugs) {
+        try {
+          const res = await state.sb.functions.invoke(slug, { body: { ref: ref, pageUrl: location.origin + location.pathname } });
+          if (res && !res.error && res.data && res.data.url) { window.location.href = res.data.url; return; }
+          lastErr = res && res.error ? (res.error.message || "stripe") : "stripe";
+        } catch (e) { lastErr = (e && e.message) ? e.message : String(e); }
+      }
+      console.warn("Stripe plačilo (panel) ni uspelo:", lastErr);
+      toast("Plačila trenutno ni mogoče začeti. Poskusi znova čez trenutek.");
+      payUnpaid.disabled = false; payUnpaid.textContent = "Plačilo izbranih (" + refs.length + ")";
+    });
     updUnpaid();
   }
 
