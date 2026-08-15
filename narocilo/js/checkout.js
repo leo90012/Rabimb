@@ -192,9 +192,10 @@
       kv("Telefon",s.telefon||"-")+
       kv("Termin",fmtDatum(s.datum)+" "+(s.cas||""))+
       '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="inquiry">Oddaj povpraševanje</button><button class="btn" id="next">Registracija in plačilo</button></div></div>');
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="inquiry">Oddaj povpraševanje</button>'+(s.loggedIn?'<button class="btn" id="pay">Plačilo</button>':'<button class="btn" id="next">Registracija in plačilo</button>')+'</div></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="termin";route();};});
-    q$("#next").onclick=function(){s.step="racun";route();};
+    var pb=q$("#pay");if(pb)pb.onclick=submit;
+    var nx=q$("#next");if(nx)nx.onclick=function(){s.step="racun";route();};
     var iq=q$("#inquiry");if(iq)iq.onclick=function(){s.step="povprasevanje";route();};
   }
   function kv(k,v){return '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>';}
@@ -246,9 +247,9 @@
       '<div class="rowflex"><div class="field"><label>Ime</label><input id="ime" value="'+esc(s.ime)+'" /></div>'+
       '<div class="field"><label>Priimek</label><input id="priimek" value="'+esc(s.priimek)+'" /></div></div>'+
       '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" /></div>'+
-      '<div class="alert info">Plačilo (Stripe) bo dodano kmalu. Za zdaj oddaš naročilo brez plačila — poklicali te bomo za potrditev in termin.</div>'+
+      '<div class="alert info">Po oddaji te preusmerimo na varno plačilo prvega meseca (Stripe).</div>'+
       '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="submit">Oddaj naročilo</button></div>');
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="submit">Plačilo</button></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="povzetek";route();};});
     ["ime","priimek","email"].forEach(function(id){q$("#"+id).oninput=function(e){s[id]=e.target.value;};});
     q$("#submit").onclick=submit;
@@ -268,9 +269,9 @@
       '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div>'+
       '<div class="field"><label>Geslo (za dostop do panela)</label><input type="password" id="geslo" value="'+esc(s.geslo||"")+'" placeholder="vsaj 6 znakov" minlength="6" /><div class="hint">Ustvarimo ti račun za spremljanje naročil v panelu Moj račun.</div></div>'+
       '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#7b8794;margin:0 0 14px;cursor:pointer"><input type="checkbox" id="soglasje" '+(s.soglasje?"checked":"")+' style="margin-top:2px" /> <span>Soglašam s <a href="../pravila-in-pogoji/index.html" target="_blank" rel="noopener">pogoji poslovanja</a>.</span></label>'+
-      '<div class="alert info">Plačilo (Stripe) bo dodano kmalu. Za zdaj oddaš naročilo brez plačila — poklicali te bomo za potrditev in termin.</div>'+
+      '<div class="alert info">Po oddaji te preusmerimo na varno plačilo prvega meseca (Stripe).</div>'+
       '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="submit">Oddaj naročilo</button></div>');
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="submit">Plačilo</button></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="povzetek";route();};});
     ["ime","priimek","email","geslo"].forEach(function(id){q$("#"+id).oninput=function(e){s[id]=e.target.value;};});
     var cb=q$("#soglasje");if(cb)cb.onchange=function(e){s.soglasje=e.target.checked;};
@@ -280,42 +281,51 @@
 
   async function submit(){
     var _hp=q$("#hp_order"); if(_hp&&_hp.value){return;}
-    if(!s.email||s.email.indexOf("@")<0){alert("Prosim vpiši veljaven e-naslov.");return;}
+    if(!s.email||s.email.indexOf("@")<0||!s.ime||!s.priimek||!s.naslov||!s.postna||!s.mesto||!s.telefon||!s.datum||!s.cas){alert("Prosim izpolni vse podatke in termin (korak Termin).");s.step="termin";route();return;}
     if(!s.loggedIn){
-      if(!s.geslo||s.geslo.length<6){alert("Vpiši geslo (vsaj 6 znakov).");return;}
-      if(!s.soglasje){alert("Za ustvarjanje računa moraš soglašati s pogoji poslovanja.");return;}
+      if(!s.geslo||s.geslo.length<6){alert("Vpiši geslo (vsaj 6 znakov) za svoj račun.");s.step="racun";route();return;}
+      if(!s.soglasje){alert("Za ustvarjanje računa moraš soglašati s pogoji poslovanja.");s.step="racun";route();return;}
     }
-    var btn=q$("#submit");btn.disabled=true;btn.textContent="Pošiljam...";
-    if(s.datum&&s.cas){var _bl=await blockedFor(s.datum);if(_bl[parseInt(s.cas,10)]){alert("Izbrani termin je pravkar zaseden. Prosim izberi drug termin.");btn.disabled=false;btn.textContent="Oddaj naročilo";s.step="termin";route();return;}}
+    var btn=q$("#pay")||q$("#submit");if(btn){btn.disabled=true;btn.textContent="Pošiljam...";}
+    if(s.datum&&s.cas){var _bl=await blockedFor(s.datum);if(_bl[parseInt(s.cas,10)]){alert("Izbrani termin je pravkar zaseden. Prosim izberi drug termin.");if(btn){btn.disabled=false;btn.textContent="Plačilo";}s.step="termin";route();return;}}
     if(sb&&!s.loggedIn){
       var su=await sb.auth.signUp({email:s.email,password:s.geslo});
       if(su&&su.error&&/registered|exists/i.test(su.error.message)){
         var li2=await sb.auth.signInWithPassword({email:s.email,password:s.geslo});
-        if(li2&&li2.error){alert("Ta e-naslov je že registriran. Klikni 'Imam račun' in se prijavi v odprtem oknu.");btn.disabled=false;btn.textContent="Oddaj naročilo";return;}
+        if(li2&&li2.error){alert("Ta e-naslov je že registriran. Klikni 'Imam račun' in se prijavi v odprtem oknu.");if(btn){btn.disabled=false;btn.textContent="Plačilo";}return;}
       }
     }
+    var now=new Date();
+    var ref="RB-"+now.getFullYear()+"-"+now.getTime().toString().slice(-8);
     var rec={tip:s.tip,paket:planLabel(),st_boxov:(s.tip==="izposoja"?planObj().boxes:s.stBoxov),
       cena_opis:cenaOpis(),stopnice:false,krhko:false,pomoc_polnjenje:s.extras.pomoc,
-      opis_lokacije:s.opis||null,naslov:s.naslov||null,enota:s.enota||null,postna_stevilka:s.postna||null,mesto:s.mesto||null,telefon:s.telefon||null,
+      opis_lokacije:s.opis||null,naslov:s.naslov||null,enota:null,postna_stevilka:s.postna||null,mesto:s.mesto||null,telefon:s.telefon||null,
       datum_dostave:s.datum||null,cas_dostave:s.cas||null,ime:s.ime||null,priimek:s.priimek||null,
-      email:s.email,status:"novo"};
+      email:s.email,stevilka:ref,placano:false,status:"novo"};
     try{
       if(!sb)throw new Error("Supabase ni na voljo.");
       var r=await sb.from("narocila").insert(rec);
       if(r.error)throw r.error;
-      var total=Math.round(monthly()*100)/100;
-      var osnova=Math.round((total/1.22)*100)/100;
-      var ddv=Math.round((total-osnova)*100)/100;
-      var now=new Date();
-      var stev="RB-"+now.getFullYear()+"-"+now.getTime().toString().slice(-8);
-      var zap=new Date();zap.setDate(zap.getDate()+8);
-      var zapStr=zap.getFullYear()+"-"+String(zap.getMonth()+1).padStart(2,"0")+"-"+String(zap.getDate()).padStart(2,"0");
-      var racun={stevilka:stev,osnova:osnova,ddv:ddv,znesek:total,valuta:"EUR",opis:planLabel()+" - prvi mesec",status:"izdan",email:s.email,ime:s.ime||null,priimek:s.priimek||null,datum_izdaje:todayStr(),datum_zapadlosti:zapStr};
-      s.emailSent=false;
-      var ri=await sb.from("racuni").insert(racun);
-      if(!ri.error){s.racun={stevilka:stev,osnova:osnova,ddv:ddv,znesek:total,zapStr:zapStr};try{var fr=await sb.functions.invoke("poslji-racun",{body:{stevilka:stev}});if(fr&&!fr.error)s.emailSent=true;}catch(e){}}else{console.warn(ri.error);}
-      viewDone();
-    }catch(e){alert("Napaka pri oddaji: "+(e.message||e));btn.disabled=false;btn.textContent="Oddaj naročilo";}
+      // Stripe plačilo (Checkout) – preusmeritev na varno plačilno stran
+      try{
+        var scr=await sb.functions.invoke("stripe-checkout",{body:{ref:ref,pageUrl:location.origin+location.pathname}});
+        if(scr&&!scr.error&&scr.data&&scr.data.url){window.location.href=scr.data.url;return;}
+        throw new Error(scr&&scr.error?(scr.error.message||"stripe"):"stripe");
+      }catch(se){
+        console.warn("Stripe checkout ni uspel (preusmeritev preskočena):", (se&&se.message)?se.message:se);
+        // Stripe (še) ni na voljo -> zaključimo brez spletnega plačila in izdamo račun
+        var total=Math.round(monthly()*100)/100;
+        var osnova=Math.round((total/1.22)*100)/100;
+        var ddv=Math.round((total-osnova)*100)/100;
+        var zap=new Date();zap.setDate(zap.getDate()+8);
+        var zapStr=zap.getFullYear()+"-"+String(zap.getMonth()+1).padStart(2,"0")+"-"+String(zap.getDate()).padStart(2,"0");
+        var racun={stevilka:ref,osnova:osnova,ddv:ddv,znesek:total,valuta:"EUR",opis:planLabel()+" - prvi mesec",status:"izdan",email:s.email,ime:s.ime||null,priimek:s.priimek||null,datum_izdaje:todayStr(),datum_zapadlosti:zapStr};
+        s.emailSent=false;
+        var ri=await sb.from("racuni").insert(racun);
+        if(!ri.error){s.racun={stevilka:ref,osnova:osnova,ddv:ddv,znesek:total,zapStr:zapStr};try{var fr=await sb.functions.invoke("poslji-racun",{body:{stevilka:ref}});if(fr&&!fr.error)s.emailSent=true;}catch(e){}}else{console.warn(ri.error);}
+        viewDone();
+      }
+    }catch(e){alert("Napaka pri oddaji: "+(e.message||e));btn.disabled=false;btn.textContent="Plačilo";}
   }
 
   function viewDone(){
@@ -330,6 +340,19 @@
       '</div>'+
       (s.emailSent?'':'<p class="muted" style="font-size:12.5px;margin-top:10px">Račun je shranjen; e-pošto s podatki pošljemo po potrditvi.</p>')+
       '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a></div></div>');
+  }
+
+  function viewPlacanoUspeh(ref){
+    render('<div class="done-wrap"><div class="done-check">'+ICON.check+'</div>'+
+      '<h1 class="co-title">Plačilo uspešno!</h1>'+
+      '<p class="co-sub">Hvala za naročilo. Račun ti pošljemo na e-pošto.'+(ref?' Številka naročila: <b>'+esc(ref)+'</b>.':'')+' Kmalu te pokličemo za potrditev termina.</p>'+
+      '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a> <a class="btn ghost" href="../Moj-profil/index.html">Moj račun</a></div></div>');
+  }
+  function viewPlacanoPreklic(ref){
+    render('<div class="done-wrap">'+
+      '<h1 class="co-title">Plačilo preklicano</h1>'+
+      '<p class="co-sub">Plačilo ni bilo dokončano, zato naročilo ni potrjeno. Lahko poskusiš znova.</p>'+
+      '<div class="mt"><a class="btn" href="index.html">Nazaj na naročilo</a> <a class="btn ghost" href="../index.html">Domov</a></div></div>');
   }
 
   function infoBlock(){
@@ -387,6 +410,9 @@
       }else{s.loggedIn=false;}
     });
   }
+  var _qp=new URLSearchParams(location.search);var _pl=_qp.get("placilo");
   if(!sb){render('<div class="alert err" style="max-width:520px;margin:40px auto">Ni bilo mogoče naložiti Supabase. Preveri internetno povezavo in js/config.js.</div>');}
+  else if(_pl==="uspeh"){ viewPlacanoUspeh(_qp.get("ref")); }
+  else if(_pl==="preklic"){ viewPlacanoPreklic(_qp.get("ref")); }
   else{ loadSession().then(function(){route();subscribeAuth();}); }
 })();
