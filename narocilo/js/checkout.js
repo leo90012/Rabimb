@@ -308,9 +308,16 @@
       if(r.error)throw r.error;
       // Stripe plačilo (Checkout) – preusmeritev na varno plačilno stran
       try{
-        var scr=await sb.functions.invoke("stripe-checkout",{body:{ref:ref,pageUrl:location.origin+location.pathname}});
-        if(scr&&!scr.error&&scr.data&&scr.data.url){window.location.href=scr.data.url;return;}
-        throw new Error(scr&&scr.error?(scr.error.message||"stripe"):"stripe");
+        var scr=null,lastErr=null;
+        var _slugs=["stripe-checkout","Stripe-checkout"];
+        for(var _i=0;_i<_slugs.length;_i++){
+          try{
+            scr=await sb.functions.invoke(_slugs[_i],{body:{ref:ref,pageUrl:location.origin+location.pathname}});
+            if(scr&&!scr.error&&scr.data&&scr.data.url){window.location.href=scr.data.url;return;}
+            lastErr=scr&&scr.error?(scr.error.message||"stripe"):"stripe";
+          }catch(_e){lastErr=(_e&&_e.message)?_e.message:String(_e);}
+        }
+        throw new Error(lastErr||"stripe");
       }catch(se){
         console.warn("Stripe checkout ni uspel (preusmeritev preskočena):", (se&&se.message)?se.message:se);
         // Stripe (še) ni na voljo -> zaključimo brez spletnega plačila in izdamo račun
