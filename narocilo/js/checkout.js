@@ -309,7 +309,7 @@
       // Stripe plačilo (Checkout) – preusmeritev na varno plačilno stran
       try{
         var scr=null,lastErr=null;
-        var _slugs=["stripe-checkout","Stripe-checkout"];
+        var _slugs=["rapid-api","stripe-checkout","Stripe-checkout"];
         for(var _i=0;_i<_slugs.length;_i++){
           try{
             scr=await sb.functions.invoke(_slugs[_i],{body:{ref:ref,pageUrl:location.origin+location.pathname}});
