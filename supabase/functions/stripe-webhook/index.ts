@@ -19,10 +19,12 @@ const WH_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-const stripe = new Stripe(STRIPE_SECRET, {
-  apiVersion: "2023-10-16",
-  httpClient: Stripe.createFetchHttpClient(),
-});
+function stripeClient() {
+  return new Stripe(STRIPE_SECRET, {
+    apiVersion: "2023-10-16",
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+}
 
 function znesekZa(o: any): number {
   const tip = String(o.tip || "").toLowerCase();
@@ -41,7 +43,7 @@ Deno.serve(async (req) => {
   const body = await req.text();
   let event: any;
   try {
-    event = await stripe.webhooks.constructEventAsync(body, sig!, WH_SECRET);
+    event = await stripeClient().webhooks.constructEventAsync(body, sig!, WH_SECRET);
   } catch (e) {
     return new Response("Napačen podpis: " + String((e as Error).message || e), { status: 400 });
   }

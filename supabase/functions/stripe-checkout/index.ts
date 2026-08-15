@@ -13,11 +13,6 @@ const STRIPE_SECRET = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-const stripe = new Stripe(STRIPE_SECRET, {
-  apiVersion: "2023-10-16",
-  httpClient: Stripe.createFetchHttpClient(),
-});
-
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -40,6 +35,12 @@ function znesekZa(o: any): number {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
+    if (!STRIPE_SECRET) throw new Error("STRIPE_SECRET_KEY ni nastavljen (Supabase -> Edge Functions -> Secrets).");
+    const stripe = new Stripe(STRIPE_SECRET, {
+      apiVersion: "2023-10-16",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+
     const { ref, pageUrl } = await req.json();
     if (!ref) throw new Error("Manjka ref (številka naročila).");
 
