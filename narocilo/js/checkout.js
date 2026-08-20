@@ -349,11 +349,35 @@
       '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a></div></div>');
   }
 
+  function znesekZaNarocilo(o){
+    var tip=String(o.tip||"").toLowerCase();var n=Number(o.st_boxov)||0;
+    if(tip.indexOf("izpos")>-1){var m={20:49,40:89,60:119,80:149};return m[n]||0;}
+    var per=n<=10?3.90:n<=25?3.60:3.30;return Math.round(n*per*100)/100;
+  }
+  async function potrdiPlacilo(ref){
+    // Fallback (če webhook ne označi): ob vrnitvi s Stripe označi naročilo plačano in izda račun.
+    if(!sb||!ref)return;
+    try{
+      await loadSession();
+      var oq=await sb.from("narocila").select("*").eq("stevilka",ref).order("id",{ascending:false}).limit(1).maybeSingle();
+      var o=oq&&oq.data?oq.data:null; if(!o)return;
+      if(o.placano!==true){ await sb.from("narocila").update({placano:true,status:"placano"}).eq("stevilka",ref); }
+      var rq=await sb.from("racuni").select("id").eq("stevilka",ref).limit(1).maybeSingle();
+      if(!(rq&&rq.data)){
+        var total=znesekZaNarocilo(o);var osnova=Math.round((total/1.22)*100)/100;var ddv=Math.round((total-osnova)*100)/100;
+        var zap=new Date();zap.setDate(zap.getDate()+8);var zapStr=zap.getFullYear()+"-"+String(zap.getMonth()+1).padStart(2,"0")+"-"+String(zap.getDate()).padStart(2,"0");
+        var racun={stevilka:ref,osnova:osnova,ddv:ddv,znesek:total,valuta:"EUR",opis:(o.paket||"Rabimbox")+" - prvi mesec",status:"placan",email:o.email,ime:o.ime||null,priimek:o.priimek||null,datum_izdaje:todayStr(),datum_zapadlosti:zapStr};
+        var ri=await sb.from("racuni").insert(racun);
+        if(!ri.error){try{await sb.functions.invoke("poslji-racun",{body:{stevilka:ref}});}catch(e){}}
+      }
+    }catch(e){console.warn("potrdiPlacilo:",(e&&e.message)?e.message:e);}
+  }
   function viewPlacanoUspeh(ref){
     render('<div class="done-wrap"><div class="done-check">'+ICON.check+'</div>'+
       '<h1 class="co-title">Plačilo uspešno!</h1>'+
       '<p class="co-sub">Hvala za naročilo. Račun ti pošljemo na e-pošto.'+(ref?' Številka naročila: <b>'+esc(ref)+'</b>.':'')+' Kmalu te pokličemo za potrditev termina.</p>'+
       '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a> <a class="btn ghost" href="../Moj-profil/index.html">Moj račun</a></div></div>');
+    potrdiPlacilo(ref);
   }
   function viewPlacanoPreklic(ref){
     render('<div class="done-wrap">'+
