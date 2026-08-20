@@ -175,6 +175,26 @@ html, body {
 #rb-footer .col a:hover{opacity:1;text-decoration:underline}
 #rb-footer .rb-logo img{height:64px;width:auto;display:block}
 @media(max-width:600px){#rb-footer{gap:28px;text-align:center;align-items:center}}
+#rb-reviews{max-width:1120px;margin:0 auto;padding:4px 20px 8px}
+#rb-reviews .rb-rev-head{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;margin:0 0 26px}
+#rb-reviews .rb-rev-badge{display:flex;flex-direction:column;align-items:center;line-height:1.25}
+#rb-reviews .rb-rev-odl{font-family:'Lexend',sans-serif;font-weight:700;font-size:18px;color:#e7711b;letter-spacing:.5px}
+#rb-reviews .rb-rev-stars-lg{color:#fbbc05;font-size:22px;letter-spacing:2px}
+#rb-reviews .rb-rev-based{font-size:13px;color:#666;margin-top:2px}
+#rb-reviews .rb-rev-glogo{display:flex;align-items:center;gap:8px;font-family:'Lexend',sans-serif;font-weight:600;color:#444;font-size:15px}
+#rb-reviews .rb-rev-cta{display:inline-block;font-size:13px;color:#4285F4;text-decoration:none}
+#rb-reviews .rb-rev-cta:hover{text-decoration:underline}
+#rb-reviews .rb-rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;align-items:start}
+#rb-reviews .rb-rev-card{background:#fff;border:1px solid #ececec;border-radius:12px;padding:18px 18px 14px;box-shadow:0 6px 22px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:10px;text-align:left}
+#rb-reviews .rb-rev-top{display:flex;align-items:center;gap:12px}
+#rb-reviews .rb-rev-av{width:44px;height:44px;border-radius:50%;flex:0 0 44px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family:'Lexend',sans-serif;font-size:18px}
+#rb-reviews .rb-rev-meta{flex:1;min-width:0}
+#rb-reviews .rb-rev-name{font-family:'Lexend',sans-serif;font-weight:600;font-size:15px;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#rb-reviews .rb-rev-stars{color:#fbbc05;font-size:14px;letter-spacing:1px}
+#rb-reviews .rb-rev-text{font-size:14px;line-height:1.6;color:#444;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6}
+#rb-reviews .rb-rev-card.rb-open .rb-rev-text{-webkit-line-clamp:unset;display:block}
+#rb-reviews .rb-rev-more{align-self:flex-start;background:none;border:none;padding:0;color:#4285F4;font-size:13px;cursor:pointer}
+#rb-reviews .rb-rev-more:hover{text-decoration:underline}
 </style>
 <script>
 (function(){function run(){try{
@@ -188,6 +208,30 @@ var maps='https://www.google.com/maps/place//data=!4m2!3m1!1s0x4765336af314f7ab:
 var f=document.createElement('div');f.id='rb-footer';
 f.innerHTML=(logoSrc?'<div class="col rb-logo"><img src="'+logoSrc+'" alt="Rabimbox" /></div>':'')+'<div class="col"><h4>Več informacij</h4>'+L('Skladiščenje','skladiščenje')+L('Izposoja','izposoja')+L('Cenik','cenik')+L('Pravila in pogoji','pravila in pogoji')+'</div>'+'<div class="col"><h4>O nas</h4>'+L('O nas','o nas')+L('Blog','blog')+'</div>'+'<div class="col"><h4>Kontakt</h4><a href="tel:+38640796040">+386 (0)40 796 040</a><a href="mailto:info@rabimbox.si">info@rabimbox.si</a><a href="'+maps+'" target="_blank" rel="noopener">Proletarska cesta 4, 1000 Ljubljana</a></div>';
 fm.parentNode.insertBefore(f,fm);}
+(function(){
+var host=null;
+document.querySelectorAll('.elementor-widget-shortcode .elementor-widget-container').forEach(function(w){if(w.querySelector('.ti-widget')||w.querySelector('[data-src*="trustindex"]'))host=w;});
+if(!host||document.getElementById('rb-reviews'))return;
+var maps2='https://www.google.com/maps/place//data=!4m2!3m1!1s0x4765336af314f7ab:0x9ac8dbcd3587e6c9?sa=X&ved=1t:8290&ictx=111';
+var revs=[
+{n:"jaka žabjek",t:"Zelo zanesljivi, hitra in profesionalna storitev! Priporočam!"},
+{n:"Primož Petrovič Vernikov",t:"Super storitev, prijazno osebje!"},
+{n:"Armin Adrović",t:"I would definitely recommend service Rabimbox. The boxes arrived exactly when arranged, are of good quality, easy to transfer and definitely made our relocation to a new appartment a lot easier. We loved the design of the boxes, where you can easily stack empty boxes one inside the other so they do not take a lot of space. Would recommend to anyone who needs to relocate a lot of personal items to a new location."},
+{n:"Nataša Jalen",t:"Po mnogih stresnih selitvah in razmišljanju kam z odvečnimi stvarmi, sem našla RabimBox. Izjemna odzivnost, profesionalna storitev, ugodna cena. Je sploh lahko še bolje? Toplo priporočam!"},
+{n:"Anita Mulahmetović",t:"Vedno ko smo naročili je bilo vse pravočasno, korektno in ugodno narejeno! Priporočam vsem 💪"},
+{n:"novimales",t:"Enostavno, hitro, ugodno - top👌"},
+{n:"Urban Pahor",t:"Super zadeva. Bili so zelo odzivni in prijazni."},
+{n:"Tjaša Rožič",t:"Iskreno — Rabimbox me je rešil tako elegantno, da se še danes smejim svoji samozavesti. Bila sem prepričana, da imam doma več kot dovolj svojih škatel za vse stvari. No, potem sem začela pakirati … in ugotovila, da sem živela v iluziji. 😄 Rabimbox mi je dostavil njihove izjemno praktične boxe, v katere sem končno lahko spravila vse, kar sem mislila, da bo že šlo. Najboljši del? Nobenega lomljenja kartona, nobenega lepljenja, nobenega kje je spet selotejp. Ko pa so bile stvari, ki jih trenutno ne potrebujem, pripravljene za odhod, je ekipa Rabimbox prišla, boxe prevzela in jih varno odpeljala v skladišče. Profesionalno, hitro, brez zapletov. Top ekipa, enostaven proces in želja, da bi jih odkrila že prej! Toplo priporočam Rabimbox vsem, ki se selijo, nimajo dovolj prostora ali pa — tako kot jaz — mislijo, da imajo doma dovolj škatel … dokler ne začnejo pakirati. 😉"}
+];
+var cols=['#4285F4','#EA4335','#34A853','#e7711b','#8E44AD','#16A085','#2C82C9','#2C3E50'];
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var G='<svg width="20" height="20" viewBox="0 0 48 48" style="flex:0 0 20px"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/><path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/></svg>';
+var cards=revs.map(function(r,i){var init=(r.n.trim().charAt(0)||'?').toUpperCase();return '<div class="rb-rev-card"><div class="rb-rev-top"><div class="rb-rev-av" style="background:'+cols[i%cols.length]+'">'+esc(init)+'</div><div class="rb-rev-meta"><div class="rb-rev-name">'+esc(r.n)+'</div><div class="rb-rev-stars">★★★★★</div></div>'+G+'</div><div class="rb-rev-text">'+esc(r.t)+'</div><button class="rb-rev-more" type="button">Preberi več</button></div>';}).join('');
+var wrap=document.createElement('div');wrap.id='rb-reviews';
+wrap.innerHTML='<div class="rb-rev-head"><div class="rb-rev-badge"><span class="rb-rev-odl">ODLIČNO</span><span class="rb-rev-stars-lg">★★★★★</span><span class="rb-rev-based">Na podlagi 14 ocen</span></div><div class="rb-rev-glogo">'+G.replace('width="20" height="20"','width="26" height="26"')+'<span>Google ocene</span></div><a class="rb-rev-cta" href="'+maps2+'" target="_blank" rel="noopener">Oglej si vse ocene na Googlu ›</a></div><div class="rb-rev-grid">'+cards+'</div>';
+host.innerHTML='';host.appendChild(wrap);
+wrap.querySelectorAll('.rb-rev-more').forEach(function(b){var card=b.parentNode,txt=card.querySelector('.rb-rev-text');window.requestAnimationFrame(function(){if(txt.scrollHeight-txt.clientHeight<4)b.style.display='none';});b.addEventListener('click',function(){var o=card.classList.toggle('rb-open');b.textContent=o?'Skrij':'Preberi več';});});
+})();
 }catch(e){}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
 </script>
