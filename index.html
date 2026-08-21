@@ -220,7 +220,11 @@ fm.parentNode.insertBefore(f,fm);}
 (function(){
 var host=null;
 document.querySelectorAll('.elementor-widget-shortcode .elementor-widget-container').forEach(function(w){if(w.querySelector('.ti-widget')||w.querySelector('[data-src*="trustindex"]'))host=w;});
-if(!host||document.getElementById('rb-reviews'))return;
+if(!host||document.getElementById('rb-reviews')||document.getElementById('rb-ti-host'))return;
+var base=/\/(izposoja|skladiscenje|cenik|o-nas)\//i.test(location.pathname)?'../':'';
+function tryTrustindex(){var tpl=host.querySelector('#trustindex-google-widget-html')||document.getElementById('trustindex-google-widget-html');if(!tpl){buildStatic();return;}try{if(!document.getElementById('rb-ti-css')){var l=document.createElement('link');l.id='rb-ti-css';l.rel='stylesheet';l.href=base+'wp-content/uploads/trustindex-google-widget391d.css';document.head.appendChild(l);}var pre=document.createElement('pre');pre.className='ti-widget';pre.appendChild(document.importNode(tpl.content,true));var holder=document.createElement('div');holder.id='rb-ti-host';holder.appendChild(pre);host.innerHTML='';host.appendChild(holder);function check(n){var ok=false;try{ok=Array.prototype.some.call(holder.querySelectorAll('.ti-review-item'),function(x){return x.offsetParent!==null;});}catch(e){}if(ok)return;if(n<=0){buildStatic();return;}setTimeout(function(){if(window.renderTrustindexWidgets){try{window.renderTrustindexWidgets();}catch(e){}}check(n-1);},700);}if(window.renderTrustindexWidgets){try{window.renderTrustindexWidgets();}catch(e){}check(12);}else{var s=document.createElement('script');s.async=true;s.src='https://cdn.trustindex.io/loader.js?wp-widget';s.onload=function(){check(12);};s.onerror=function(){buildStatic();};document.body.appendChild(s);}}catch(e){buildStatic();}}
+function buildStatic(){
+if(document.getElementById('rb-reviews'))return;
 var maps2='https://www.google.com/maps/place//data=!4m2!3m1!1s0x4765336af314f7ab:0x9ac8dbcd3587e6c9?sa=X&ved=1t:8290&ictx=111';
 var revs=[
 {n:"jaka žabjek",t:"Zelo zanesljivi, hitra in profesionalna storitev! Priporočam!"},
@@ -255,6 +259,8 @@ var pv=wrap.querySelector('.rb-rev-prev'),nx=wrap.querySelector('.rb-rev-next');
 if(pv)pv.addEventListener('click',function(){track.scrollBy({left:-318,behavior:'smooth'});});
 if(nx)nx.addEventListener('click',function(){track.scrollBy({left:318,behavior:'smooth'});});
 wrap.querySelectorAll('.rb-rev-more').forEach(function(b){var card=b.parentNode,txt=card.querySelector('.rb-rev-text');window.requestAnimationFrame(function(){if(txt.scrollHeight-txt.clientHeight<4)b.style.display='none';});b.addEventListener('click',function(e){e.stopPropagation();var o=card.classList.toggle('rb-open');b.textContent=o?'Skrij':'Preberi več';});});
+}
+tryTrustindex();
 })();
 }catch(e){}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
