@@ -185,7 +185,7 @@ html, body {
 #rb-reviews .rb-rev-viewport{overflow:hidden}
 #rb-reviews .rb-rev-track{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:6px 4px 14px;-ms-overflow-style:none;scrollbar-width:none}
 #rb-reviews .rb-rev-track::-webkit-scrollbar{display:none}
-#rb-reviews .rb-rev-card{flex:0 0 300px;max-width:300px;scroll-snap-align:start;background:#fff;border:1px solid #ececec;border-radius:12px;padding:18px;box-shadow:0 6px 22px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:9px;text-align:left;box-sizing:border-box}
+#rb-reviews .rb-rev-card{flex:0 0 calc((100% - 36px)/3);max-width:calc((100% - 36px)/3);scroll-snap-align:start;background:#fff;border:1px solid #ececec;border-radius:12px;padding:18px;box-shadow:0 6px 22px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:9px;text-align:left;box-sizing:border-box}
 @media(max-width:680px){#rb-reviews .rb-rev-card{flex-basis:84%;max-width:84%}}
 #rb-reviews .rb-rev-top{display:flex;align-items:center;gap:11px}
 #rb-reviews .rb-rev-av{position:relative;width:44px;height:44px;border-radius:50%;flex:0 0 44px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family:'Lexend',sans-serif;font-size:18px;overflow:hidden}
@@ -199,7 +199,7 @@ html, body {
 #rb-reviews .rb-rev-card.rb-open .rb-rev-text{-webkit-line-clamp:unset;display:block}
 #rb-reviews .rb-rev-more{align-self:flex-start;background:none;border:none;padding:0;color:#777;font-size:13px;cursor:pointer}
 #rb-reviews .rb-rev-more:hover{text-decoration:underline}
-#rb-reviews .rb-rev-nav{position:absolute;top:58%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid #e2e2e2;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#555;z-index:3}
+#rb-reviews .rb-rev-nav{position:absolute;top:58%;transform:translateY(-50%);width:34px !important;height:34px !important;min-width:0;padding:0;box-sizing:border-box;border-radius:50%;border:1px solid #e2e2e2;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#555;z-index:3}
 #rb-reviews .rb-rev-nav svg{width:20px;height:20px}
 #rb-reviews .rb-rev-prev{left:-4px}
 #rb-reviews .rb-rev-next{right:-4px}
@@ -254,12 +254,12 @@ var VB='<svg class="rb-rev-badge" width="15" height="15" viewBox="0 0 24 24"><ci
 var GW='<span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>';
 var cards=revs.map(function(r,i){var init=(r.n.trim().charAt(0)||'?').toUpperCase();var ph=photos[r.n];var av='<div class="rb-rev-av" style="background:'+cols[i%cols.length]+'">'+esc(init)+(ph?'<img src="'+ph.replace("w40-h40","w96-h96")+'" alt="" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">':'')+'</div>';return '<div class="rb-rev-card"><div class="rb-rev-top">'+av+'<div class="rb-rev-name">'+esc(r.n)+'</div>'+G+'</div><div class="rb-rev-row2"><span class="rb-rev-stars">★★★★★</span>'+VB+'</div><div class="rb-rev-text">'+esc(r.t)+'</div><button class="rb-rev-more" type="button">Preberi več</button></div>';}).join('');
 var wrap=document.createElement('div');wrap.id='rb-reviews';
-wrap.innerHTML='<div class="rb-rev-head"><span class="rb-rev-odl">ODLIČNO</span><span class="rb-rev-stars-lg">★★★★★</span><span class="rb-rev-based">Na podlagi <b>14 ocene</b></span><div class="rb-rev-glogo">'+GW+'</div></div><button class="rb-rev-nav rb-rev-prev" type="button" aria-label="Prejšnje" style="font-size:26px;line-height:1">‹</button><div class="rb-rev-viewport"><div class="rb-rev-track">'+cards+'</div></div><button class="rb-rev-nav rb-rev-next" type="button" aria-label="Naslednje" style="font-size:26px;line-height:1">›</button>';
+wrap.innerHTML='<div class="rb-rev-head"><span class="rb-rev-odl">ODLIČNO</span><span class="rb-rev-stars-lg">★★★★★</span><span class="rb-rev-based">Na podlagi <b>14 ocene</b></span><div class="rb-rev-glogo">'+GW+'</div></div><button class="rb-rev-nav rb-rev-prev" type="button" aria-label="Prejšnje" style="font-size:17px;line-height:1">‹</button><div class="rb-rev-viewport"><div class="rb-rev-track">'+cards+'</div></div><button class="rb-rev-nav rb-rev-next" type="button" aria-label="Naslednje" style="font-size:17px;line-height:1">›</button>';
 host.innerHTML='';host.appendChild(wrap);
 var track=wrap.querySelector('.rb-rev-track');
 var pv=wrap.querySelector('.rb-rev-prev'),nx=wrap.querySelector('.rb-rev-next');
-if(pv)pv.addEventListener('click',function(){track.scrollBy({left:-318,behavior:'smooth'});});
-if(nx)nx.addEventListener('click',function(){track.scrollBy({left:318,behavior:'smooth'});});
+if(pv)pv.addEventListener('click',function(){track.scrollBy({left:-(track.clientWidth||318),behavior:'smooth'});});
+if(nx)nx.addEventListener('click',function(){track.scrollBy({left:(track.clientWidth||318),behavior:'smooth'});});
 wrap.querySelectorAll('.rb-rev-more').forEach(function(b){var card=b.parentNode,txt=card.querySelector('.rb-rev-text');window.requestAnimationFrame(function(){if(txt.scrollHeight-txt.clientHeight<4)b.style.display='none';});b.addEventListener('click',function(e){e.stopPropagation();var o=card.classList.toggle('rb-open');b.textContent=o?'Skrij':'Preberi več';});});
 }
 buildStatic();
