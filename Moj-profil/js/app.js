@@ -464,9 +464,10 @@
   function racRow(r) {
     const paid = /plac|plač|paid/i.test(r.status || "");
     const overdue = !paid && r.datum_zapadlosti && (new Date(r.datum_zapadlosti) < new Date(new Date().toDateString()));
-    const badge = overdue ? `<span class="badge red">zapadlo</span>` : racStatusBadge(r.status);
+    const naziv = (paid ? "Račun" : "Predračun") + " " + (r.stevilka || ("#" + r.id));
+    const badge = paid ? racStatusBadge(r.status) : (overdue ? `<span class="badge red">zapadlo</span>` : `<span class="badge amber">Predračun</span>`);
     return `<div class="row"><span class="ico">${ICON.receipt}</span>
-      <div class="main"><div class="t">${esc(r.stevilka || "Račun #" + r.id)}</div>
+      <div class="main"><div class="t">${esc(naziv)}</div>
       <div class="s">Izdan: ${fmtDate(r.datum_izdaje)}${r.datum_zapadlosti ? " - Zapadlost: " + fmtDate(r.datum_zapadlosti) : ""}</div></div>
       <div class="end"><div style="font-weight:700;color:var(--heading)">${money(r.znesek, r.valuta || "EUR")}</div>
       <div style="margin-top:4px">${badge}</div>

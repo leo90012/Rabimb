@@ -12,15 +12,15 @@
     {id:"izp80",naziv:"80 boxov",boxes:80,cena:149}
   ];
   var SKL=[
-    {id:"skl10",naziv:"Do 10 boxov",max:10,perBox:3.90},
-    {id:"skl25",naziv:"Do 25 boxov",max:25,perBox:3.60},
-    {id:"skl50",naziv:"Do 50 boxov",max:50,perBox:3.30},
+    {id:"skl10",naziv:"Do 10 boxov",min:1,max:10,perBox:3.90},
+    {id:"skl25",naziv:"Do 25 boxov",min:11,max:25,perBox:3.60},
+    {id:"skl50",naziv:"Do 50 boxov",min:26,max:50,perBox:3.30},
     {id:"sklkontakt",naziv:"Nad 50 boxov",contact:true}
   ];
   var STEPS=[["paketi","Paketi"],["termin","Termin"],["povzetek","Povzetek"],["racun","Račun"]];
 
-  var s={step:"choice",tip:null,plan:null,stBoxov:null,extras:{stopnice:false,krhko:false,pomoc:false},
-    opis:"",naslov:"",enota:"",postna:"",mesto:"",telefon:"",datum:"",cas:"",ime:"",priimek:"",email:"",geslo:"",racunMode:"novo",soglasje:false,loggedIn:false,loginHint:false};
+  var s={step:"choice",tip:null,plan:null,stBoxov:null,extras:{stopnice:false,krhko:false,pomoc:false,dvigalo:false},
+    opis:"",nadstropje:"",naslov:"",enota:"",postna:"",mesto:"",telefon:"",datum:"",cas:"",ime:"",priimek:"",email:"",geslo:"",racunMode:"novo",soglasje:false,loggedIn:false,loginHint:false};
 
   var LJ_POSTE=["1000","1210","1211","1215","1231","1235","1236","1260","1261","1262","1290","1291","1292","1293","1294","1295","1296","1351","1354","1355","1356","1357","1358","1360","1370"];
 
@@ -41,7 +41,7 @@
   function planObj(){if(!s.plan)return null;var a=(s.tip==="izposoja"?IZP:SKL);for(var i=0;i<a.length;i++)if(a[i].id===s.plan)return a[i];return null;}
   function monthly(){var p=planObj();if(!p)return 0;return s.tip==="izposoja"?p.cena:(s.stBoxov||0)*p.perBox;}
   function planLabel(){var p=planObj();if(!p)return "-";return s.tip==="izposoja"?("Izposoja "+p.naziv):("Skladiščenje "+p.naziv+" ("+(s.stBoxov||0)+" boxov)");}
-  function cenaOpis(){var p=planObj();if(!p)return "";return s.tip==="izposoja"?(eur(p.cena)+"/mesec"):((s.stBoxov||0)+" × "+eur(p.perBox)+" = "+eur(monthly())+"/mesec");}
+  function cenaOpis(){var p=planObj();if(!p)return "";return s.tip==="izposoja"?(eur(p.cena)+" mesečno"):((s.stBoxov||0)+" × "+eur(p.perBox)+" = "+eur(monthly())+" mesečno");}
 
   function progress(cur){
     var idx=-1;for(var i=0;i<STEPS.length;i++)if(STEPS[i][0]===cur)idx=i;
@@ -69,14 +69,14 @@
       if(p.contact){return '<div class="plan"><div class="pic"><img src="Slike/Skatle.png" alt="box" /></div><div class="pt">'+esc(p.naziv)+'</div><div class="pd">po dogovoru</div><div class="pp" style="font-size:17px">Po dogovoru</div><div class="pu">&nbsp;</div><a class="btn small" href="mailto:'+esc(CFG.SUPPORT_EMAIL||"info@rabimbox.si")+'?subject='+encodeURIComponent("Povprasevanje - skladiscenje nad 50 boxov")+'" style="text-decoration:none">Kontaktiraj nas</a></div>';}
       var sel=s.plan===p.id?" sel":"";
       var price=izp?eur(p.cena):eur(p.perBox);
-      var unit=izp?"/mesec":"/box · min. 3 mesece";
+      var unit=izp?"mesečno":"1 box / 1 mesec";
       var desc=izp?("Najem "+p.boxes+" boxov"):("do "+p.max+" boxov");
       return '<div class="plan'+sel+'"><div class="pic"><img src="Slike/Skatle.png" alt="box" /></div><div class="pt">'+esc(p.naziv)+'</div>'+
         '<div class="pd">'+esc(desc)+'</div><div class="pp">'+price+'</div><div class="pu">'+unit+'</div>'+
         '<button class="btn small selbtn" data-id="'+p.id+'">Izberi</button></div>';
     }).join("");
     var boxSel="";
-    if(!izp&&s.plan){var p=planObj();boxSel='<div class="card mt" style="max-width:420px;margin:18px auto 0"><div class="field"><label>Koliko boxov shranjuješ? (do '+p.max+')</label><input type="number" id="stBoxov" min="1" max="'+p.max+'" value="'+(s.stBoxov||"")+'" placeholder="npr. 8" /></div><div class="center muted" id="cenaCalc">'+(s.stBoxov?("Mesečno: "+eur(monthly())):"Vpiši število boxov")+'</div></div>';}
+    if(!izp&&s.plan){var p=planObj();var pmin=p.min||1;boxSel='<div class="card mt" style="max-width:460px;margin:18px auto 0"><div class="field"><label>Koliko boxov shranjuješ? ('+pmin+'–'+p.max+')</label><input type="number" id="stBoxov" min="'+pmin+'" max="'+p.max+'" value="'+(s.stBoxov||"")+'" placeholder="npr. '+pmin+'" /></div><div class="center muted" id="cenaCalc">'+(s.stBoxov?("Mesečno: "+eur(monthly())):"Vpiši število boxov")+'</div><div class="hint" style="margin-top:8px">Zaračunavamo samo število polnih boxov. Primer: če naročite 20 boxov in jih napolnite 10, se vam obračuna skladišče za 10 boxov.</div></div>';}
     render('<h1 class="co-title"><button class="back-inline" data-back>‹</button>'+(izp?"Paketi izposoje":"Paketi skladiščenja")+'</h1>'+
       '<p class="co-sub">Najprej izberi paket'+(izp?"":", nato vpiši število boxov")+'.</p>'+
       progress("paketi")+'<div class="plan-grid">'+cards+'</div>'+boxSel+
@@ -84,10 +84,11 @@
       infoBlock());
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="choice";route();};});
     q$all(".selbtn").forEach(function(b){b.onclick=function(){s.plan=b.getAttribute("data-id");if(s.tip==="izposoja"){s.step="termin";route();}else{route();}};});
-    var bx=q$("#stBoxov");if(bx)bx.oninput=function(){var v=parseInt(bx.value,10);var p=planObj();if(v>p.max)v=p.max;s.stBoxov=isNaN(v)?null:v;var c=q$("#cenaCalc");if(c)c.textContent=s.stBoxov?("Mesečno: "+eur(monthly())):"Vpiši število boxov";var n=q$("#next");if(n)n.disabled=!canNextPaketi();};
+    var bx=q$("#stBoxov");if(bx){bx.oninput=function(){var v=parseInt(bx.value,10);var p=planObj();if(v>p.max)v=p.max;s.stBoxov=isNaN(v)?null:v;var c=q$("#cenaCalc");if(c)c.textContent=s.stBoxov?("Mesečno: "+eur(monthly())):"Vpiši število boxov";var n=q$("#next");if(n)n.disabled=!canNextPaketi();};
+      bx.onchange=function(){var p=planObj();var pmin=p.min||1;if(s.stBoxov&&s.stBoxov<pmin){s.stBoxov=pmin;bx.value=pmin;var c=q$("#cenaCalc");if(c)c.textContent="Mesečno: "+eur(monthly());var n=q$("#next");if(n)n.disabled=!canNextPaketi();}};}
     var nb=q$("#next");if(nb)nb.onclick=function(){if(canNextPaketi()){s.step="termin";route();}};
   }
-  function canNextPaketi(){if(!s.plan)return false;if(s.tip==="skladiscenje")return !!s.stBoxov&&s.stBoxov>0;return true;}
+  function canNextPaketi(){if(!s.plan)return false;if(s.tip==="skladiscenje"){var p=planObj();if(!p)return false;var pmin=p.min||1;return !!s.stBoxov&&s.stBoxov>=pmin&&s.stBoxov<=p.max;}return true;}
 
   // ---- DODATKI ----
   function viewDodatki(){
@@ -148,13 +149,15 @@
       '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div></div>'+
       '<div class="rowflex"><div class="field"><label>Datum</label><input type="date" id="datum" min="'+todayStr()+'" value="'+esc(s.datum)+'" /></div>'+
       '<div class="field"><label>Ura</label><select id="cas"><option value="">Najprej izberi datum</option></select><div class="hint" id="casHint"></div></div></div>'+
-      xrow("help","pomoc","Želite pomoč pri polnjenju boxov?","Doplačilo 25 €/h")+
-      '<div class="field mt"><label>Opis lokacije / stavbe</label><textarea id="opis" rows="2" placeholder="Npr. 3. nadstropje, desno od dvigala, šifra vrat 1234...">'+esc(s.opis)+'</textarea></div>'+
+      '<div class="field mt"><label>Vrsta objekta</label><textarea id="opis" rows="2" placeholder="Npr: Hiša, večstanovanjska hiša, blok, poslovni objekt,…">'+esc(s.opis)+'</textarea></div>'+
+      '<div class="field mt"><label>Katero nadstropje?</label><textarea id="nadstropje" rows="2" placeholder="Npr: pritličje, 2. nadstropje,…">'+esc(s.nadstropje)+'</textarea></div>'+
+      xrow("truck","dvigalo","Je v objektu dvigalo?","")+
       '</div>'+summaryCard()+'</div>'+
       '<div id="terminNav">'+terminNavHtml()+'</div>');
     ["ime","priimek","naslov","postna","mesto","telefon","email"].forEach(function(id){var e=q$("#"+id);if(e)e.oninput=function(ev){s[id]=ev.target.value;if(id==="postna"||id==="mesto")refreshTerminNav();};});
     q$all(".sw").forEach(function(sw){sw.onclick=function(){var k=sw.getAttribute("data-k");s.extras[k]=!s.extras[k];sw.classList.toggle("on",s.extras[k]);};});
     var op=q$("#opis");if(op)op.oninput=function(e){s.opis=e.target.value;};
+    var nd=q$("#nadstropje");if(nd)nd.oninput=function(e){s.nadstropje=e.target.value;};
     q$("#datum").onchange=function(e){s.datum=e.target.value;s.cas="";refreshTimes();};
     q$("#cas").onchange=function(e){s.cas=e.target.value;};
     if(s.datum)refreshTimes();
@@ -184,8 +187,9 @@
       kv("Storitev",s.tip==="izposoja"?"Izposoja":"Skladiščenje")+
       kv("Paket",planLabel())+
       kv("Cena",cenaOpis())+
-      kv("Pomoč pri polnjenju",s.extras.pomoc?"Da (25 €/h)":"Ne")+
-      kv("Opis lokacije",s.opis||"-")+
+      kv("Vrsta objekta",s.opis||"-")+
+      kv("Nadstropje",s.nadstropje||"-")+
+      kv("Dvigalo",s.extras.dvigalo?"Da":"Ne")+
       kv("Naslov",s.naslov||"-")+
       kv("Poštna številka",s.postna||"-")+
       kv("Mesto",s.mesto||"-")+
@@ -299,7 +303,7 @@
     var ref="RB-"+now.getFullYear()+"-"+now.getTime().toString().slice(-8);
     var rec={tip:s.tip,paket:planLabel(),st_boxov:(s.tip==="izposoja"?planObj().boxes:s.stBoxov),
       cena_opis:cenaOpis(),stopnice:false,krhko:false,pomoc_polnjenje:s.extras.pomoc,
-      opis_lokacije:s.opis||null,naslov:s.naslov||null,enota:null,postna_stevilka:s.postna||null,mesto:s.mesto||null,telefon:s.telefon||null,
+      opis_lokacije:("Vrsta objekta: "+(s.opis||"-")+" | Nadstropje: "+(s.nadstropje||"-")+" | Dvigalo: "+(s.extras.dvigalo?"Da":"Ne")),naslov:s.naslov||null,enota:null,postna_stevilka:s.postna||null,mesto:s.mesto||null,telefon:s.telefon||null,
       datum_dostave:s.datum||null,cas_dostave:s.cas||null,ime:s.ime||null,priimek:s.priimek||null,
       email:s.email,stevilka:ref,placano:false,status:"novo"};
     try{
@@ -387,8 +391,14 @@
   }
 
   function infoBlock(){
-    return '<div class="info-2"><div><h4>Kakšne predmete lahko hranim?</h4><p>Shranite lahko večino gospodinjskih in pisarniških predmetov. Ne shranjujemo krhkih predmetov (steklo, porcelan, občutljiva elektronika brez zaščite) in predmetov, ki so z zakonom prepovedani (nevarne, vnetljive ali ilegalne snovi). Pri skladiščenju je minimalno obdobje 3 mesece.</p></div>'+
-      '<div><h4>Prevzemi in dostave</h4><p>Dostave in prevzemi so od ponedeljka do sobote. Termin uskladimo vsaj 48 ur vnaprej.</p></div></div>';
+    var levo;
+    if(s.tip==="izposoja"){
+      levo='<h4>Koliko boxov potrebujem?</h4><p>Velikost našega zaboja je: Dolžina: 60, Širina: 40, Višina: 44 cm. Da pa boste lažje načrtovali in najeli pravilno število box-ov, si lahko pomagate z našimi splošnimi smernicami o številu škatel: Garsonjera: 15–30 boxov, 1-sobno stanovanje: 30–40 boxov, 2-sobno stanovanje: 40–60 boxov, 3-sobno stanovanje: 60–80 boxov.</p>';
+    }else{
+      levo='<h4>Kaj lahko shranjujem?</h4><p>Shranjujete lahko vse stvari, ki jih lahko spravite v naš box velikosti: Dolžine: 60, Širine: 40, Višine: 44 cm. Prepovedano je shranjevati krhke predmete, hrano in pijačo, vnetljive predmete, kemikalije in vse predmete, ki so zakonsko prepovedani.</p>';
+    }
+    return '<div class="info-2"><div>'+levo+'</div>'+
+      '<div><h4>Prevzemi in dostave</h4><p>Dostave in prevzemi so od ponedeljka do petka. Termin uskladimo vsaj 48 ur vnaprej.</p></div></div>';
   }
 
   function q$(sel){return APP.querySelector(sel);}
