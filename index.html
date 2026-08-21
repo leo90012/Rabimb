@@ -175,26 +175,35 @@ html, body {
 #rb-footer .col a:hover{opacity:1;text-decoration:underline}
 #rb-footer .rb-logo img{height:64px;width:auto;display:block}
 @media(max-width:600px){#rb-footer{gap:28px;text-align:center;align-items:center}}
-#rb-reviews{max-width:1120px;margin:0 auto;padding:4px 20px 8px}
-#rb-reviews .rb-rev-head{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;margin:0 0 26px}
-#rb-reviews .rb-rev-badge{display:flex;flex-direction:column;align-items:center;line-height:1.25}
-#rb-reviews .rb-rev-odl{font-family:'Lexend',sans-serif;font-weight:700;font-size:18px;color:#e7711b;letter-spacing:.5px}
-#rb-reviews .rb-rev-stars-lg{color:#fbbc05;font-size:22px;letter-spacing:2px}
-#rb-reviews .rb-rev-based{font-size:13px;color:#666;margin-top:2px}
-#rb-reviews .rb-rev-glogo{display:flex;align-items:center;gap:8px;font-family:'Lexend',sans-serif;font-weight:600;color:#444;font-size:15px}
-#rb-reviews .rb-rev-cta{display:inline-block;font-size:13px;color:#4285F4;text-decoration:none}
-#rb-reviews .rb-rev-cta:hover{text-decoration:underline}
-#rb-reviews .rb-rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;align-items:start}
-#rb-reviews .rb-rev-card{background:#fff;border:1px solid #ececec;border-radius:12px;padding:18px 18px 14px;box-shadow:0 6px 22px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:10px;text-align:left}
-#rb-reviews .rb-rev-top{display:flex;align-items:center;gap:12px}
-#rb-reviews .rb-rev-av{width:44px;height:44px;border-radius:50%;flex:0 0 44px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family:'Lexend',sans-serif;font-size:18px}
-#rb-reviews .rb-rev-meta{flex:1;min-width:0}
-#rb-reviews .rb-rev-name{font-family:'Lexend',sans-serif;font-weight:600;font-size:15px;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#rb-reviews .rb-rev-stars{color:#fbbc05;font-size:14px;letter-spacing:1px}
-#rb-reviews .rb-rev-text{font-size:14px;line-height:1.6;color:#444;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6}
+#rb-reviews{max-width:1180px;margin:0 auto;padding:4px 12px 8px;position:relative}
+#rb-reviews .rb-rev-head{display:flex;flex-direction:column;align-items:center;gap:3px;margin:0 0 20px}
+#rb-reviews .rb-rev-odl{font-family:'Lexend',sans-serif;font-weight:700;font-size:19px;color:#1a1a1a;letter-spacing:.5px}
+#rb-reviews .rb-rev-stars-lg{color:#fbbc05;font-size:24px;letter-spacing:3px;line-height:1}
+#rb-reviews .rb-rev-based{font-size:13px;color:#555}
+#rb-reviews .rb-rev-based b{font-weight:700}
+#rb-reviews .rb-rev-glogo{font-family:'Lexend','Arial',sans-serif;font-weight:600;font-size:26px;letter-spacing:-1px;margin-top:3px}
+#rb-reviews .rb-rev-viewport{overflow:hidden}
+#rb-reviews .rb-rev-track{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:6px 4px 14px;-ms-overflow-style:none;scrollbar-width:none}
+#rb-reviews .rb-rev-track::-webkit-scrollbar{display:none}
+#rb-reviews .rb-rev-card{flex:0 0 300px;max-width:300px;scroll-snap-align:start;background:#fff;border:1px solid #ececec;border-radius:12px;padding:18px;box-shadow:0 6px 22px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:9px;text-align:left;box-sizing:border-box}
+@media(max-width:680px){#rb-reviews .rb-rev-card{flex-basis:84%;max-width:84%}}
+#rb-reviews .rb-rev-top{display:flex;align-items:center;gap:11px}
+#rb-reviews .rb-rev-av{position:relative;width:44px;height:44px;border-radius:50%;flex:0 0 44px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family:'Lexend',sans-serif;font-size:18px;overflow:hidden}
+#rb-reviews .rb-rev-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+#rb-reviews .rb-rev-name{font-family:'Lexend',sans-serif;font-weight:600;font-size:15px;color:#222;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#rb-reviews .rb-rev-gicon{flex:0 0 20px;align-self:flex-start}
+#rb-reviews .rb-rev-row2{display:flex;align-items:center;gap:6px}
+#rb-reviews .rb-rev-stars{color:#fbbc05;font-size:15px;letter-spacing:1px}
+#rb-reviews .rb-rev-badge{flex:0 0 15px;display:flex}
+#rb-reviews .rb-rev-text{font-size:14px;line-height:1.6;color:#444;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5}
 #rb-reviews .rb-rev-card.rb-open .rb-rev-text{-webkit-line-clamp:unset;display:block}
-#rb-reviews .rb-rev-more{align-self:flex-start;background:none;border:none;padding:0;color:#4285F4;font-size:13px;cursor:pointer}
+#rb-reviews .rb-rev-more{align-self:flex-start;background:none;border:none;padding:0;color:#777;font-size:13px;cursor:pointer}
 #rb-reviews .rb-rev-more:hover{text-decoration:underline}
+#rb-reviews .rb-rev-nav{position:absolute;top:58%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid #e2e2e2;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#555;z-index:3}
+#rb-reviews .rb-rev-nav svg{width:20px;height:20px}
+#rb-reviews .rb-rev-prev{left:-4px}
+#rb-reviews .rb-rev-next{right:-4px}
+#rb-reviews .rb-rev-nav:hover{background:#f6f6f6}
 </style>
 <script>
 (function(){function run(){try{
@@ -224,13 +233,28 @@ var revs=[
 {n:"Tjaša Rožič",t:"Iskreno — Rabimbox me je rešil tako elegantno, da se še danes smejim svoji samozavesti. Bila sem prepričana, da imam doma več kot dovolj svojih škatel za vse stvari. No, potem sem začela pakirati … in ugotovila, da sem živela v iluziji. 😄 Rabimbox mi je dostavil njihove izjemno praktične boxe, v katere sem končno lahko spravila vse, kar sem mislila, da bo že šlo. Najboljši del? Nobenega lomljenja kartona, nobenega lepljenja, nobenega kje je spet selotejp. Ko pa so bile stvari, ki jih trenutno ne potrebujem, pripravljene za odhod, je ekipa Rabimbox prišla, boxe prevzela in jih varno odpeljala v skladišče. Profesionalno, hitro, brez zapletov. Top ekipa, enostaven proces in želja, da bi jih odkrila že prej! Toplo priporočam Rabimbox vsem, ki se selijo, nimajo dovolj prostora ali pa — tako kot jaz — mislijo, da imajo doma dovolj škatel … dokler ne začnejo pakirati. 😉"}
 ];
 var cols=['#4285F4','#EA4335','#34A853','#e7711b','#8E44AD','#16A085','#2C82C9','#2C3E50'];
+var photos={
+"jaka žabjek":"https://lh3.googleusercontent.com/a-/ALV-UjVak3xiJZUSJKFRD58Iq7ieG0PHZ5RPWBjn_BnyoWIYLYfqYWM=w40-h40-c-rp-mo-br100",
+"Primož Petrovič Vernikov":"https://lh3.googleusercontent.com/a/ACg8ocJXdymK4-6zHySVZk9Gx_tdGcsBw_tpzGBeilUduvlaOwhkTw=w40-h40-c-rp-mo-br100",
+"Armin Adrović":"https://lh3.googleusercontent.com/a-/ALV-UjWLao4-6AnxDcTXeWRLt5bqjLZTNhqY-_Pi7oLxURvELoeJxlw3Og=w40-h40-c-rp-mo-br100",
+"Nataša Jalen":"https://lh3.googleusercontent.com/a-/ALV-UjWHkrvIMl91YLd-aMMZTspDT2mkPpMaoLKxiwdFm2Scwc-IcVNF=w40-h40-c-rp-mo-br100",
+"Anita Mulahmetović":"https://lh3.googleusercontent.com/a/ACg8ocJVJz5qqU3cLmEww6aICPtED-gIhMA3gOVJnXbgFws8qkhRZg=w40-h40-c-rp-mo-br100",
+"novimales":"https://lh3.googleusercontent.com/a/ACg8ocJaGu9Q8uIqk2u-X-cNM5jdTv5z8mhm8bKbfABQMWLuH9NjVQ=w40-h40-c-rp-mo-br100",
+"Urban Pahor":"https://lh3.googleusercontent.com/a-/ALV-UjWZCozMGpYqZJzUokfqtIUwnlBYAGe1UqhMzIPp6bdquWR5Yv6o=w40-h40-c-rp-mo-ba12-br100",
+"Tjaša Rožič":"https://lh3.googleusercontent.com/a/ACg8ocKGm1Aa_xqIK_M0DsUdjb8x6iVSrq5AHu7yeQERNgHWBbEoPAPU=w40-h40-c-rp-mo-br100"};
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-var G='<svg width="20" height="20" viewBox="0 0 48 48" style="flex:0 0 20px"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/><path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/></svg>';
-var cards=revs.map(function(r,i){var init=(r.n.trim().charAt(0)||'?').toUpperCase();return '<div class="rb-rev-card"><div class="rb-rev-top"><div class="rb-rev-av" style="background:'+cols[i%cols.length]+'">'+esc(init)+'</div><div class="rb-rev-meta"><div class="rb-rev-name">'+esc(r.n)+'</div><div class="rb-rev-stars">★★★★★</div></div>'+G+'</div><div class="rb-rev-text">'+esc(r.t)+'</div><button class="rb-rev-more" type="button">Preberi več</button></div>';}).join('');
+var G='<svg class="rb-rev-gicon" width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/><path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/></svg>';
+var VB='<svg class="rb-rev-badge" width="15" height="15" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#4A90E2"/><path d="M17.2 8.4l-6.6 6.6-3.4-3.4 1.4-1.4 2 2 5.2-5.2z" fill="#fff"/></svg>';
+var GW='<span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>';
+var cards=revs.map(function(r,i){var init=(r.n.trim().charAt(0)||'?').toUpperCase();var ph=photos[r.n];var av='<div class="rb-rev-av" style="background:'+cols[i%cols.length]+'">'+esc(init)+(ph?'<img src="'+ph+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">':'')+'</div>';return '<div class="rb-rev-card"><div class="rb-rev-top">'+av+'<div class="rb-rev-name">'+esc(r.n)+'</div>'+G+'</div><div class="rb-rev-row2"><span class="rb-rev-stars">★★★★★</span>'+VB+'</div><div class="rb-rev-text">'+esc(r.t)+'</div><button class="rb-rev-more" type="button">Preberi več</button></div>';}).join('');
 var wrap=document.createElement('div');wrap.id='rb-reviews';
-wrap.innerHTML='<div class="rb-rev-head"><div class="rb-rev-badge"><span class="rb-rev-odl">ODLIČNO</span><span class="rb-rev-stars-lg">★★★★★</span><span class="rb-rev-based">Na podlagi 14 ocen</span></div><div class="rb-rev-glogo">'+G.replace('width="20" height="20"','width="26" height="26"')+'<span>Google ocene</span></div><a class="rb-rev-cta" href="'+maps2+'" target="_blank" rel="noopener">Oglej si vse ocene na Googlu ›</a></div><div class="rb-rev-grid">'+cards+'</div>';
+wrap.innerHTML='<div class="rb-rev-head"><span class="rb-rev-odl">ODLIČNO</span><span class="rb-rev-stars-lg">★★★★★</span><span class="rb-rev-based">Na podlagi <b>14 ocen</b></span><div class="rb-rev-glogo">'+GW+'</div></div><button class="rb-rev-nav rb-rev-prev" type="button" aria-label="Prejšnje" style="font-size:26px;line-height:1">‹</button><div class="rb-rev-viewport"><div class="rb-rev-track">'+cards+'</div></div><button class="rb-rev-nav rb-rev-next" type="button" aria-label="Naslednje" style="font-size:26px;line-height:1">›</button>';
 host.innerHTML='';host.appendChild(wrap);
-wrap.querySelectorAll('.rb-rev-more').forEach(function(b){var card=b.parentNode,txt=card.querySelector('.rb-rev-text');window.requestAnimationFrame(function(){if(txt.scrollHeight-txt.clientHeight<4)b.style.display='none';});b.addEventListener('click',function(){var o=card.classList.toggle('rb-open');b.textContent=o?'Skrij':'Preberi več';});});
+var track=wrap.querySelector('.rb-rev-track');
+var pv=wrap.querySelector('.rb-rev-prev'),nx=wrap.querySelector('.rb-rev-next');
+if(pv)pv.addEventListener('click',function(){track.scrollBy({left:-318,behavior:'smooth'});});
+if(nx)nx.addEventListener('click',function(){track.scrollBy({left:318,behavior:'smooth'});});
+wrap.querySelectorAll('.rb-rev-more').forEach(function(b){var card=b.parentNode,txt=card.querySelector('.rb-rev-text');window.requestAnimationFrame(function(){if(txt.scrollHeight-txt.clientHeight<4)b.style.display='none';});b.addEventListener('click',function(e){e.stopPropagation();var o=card.classList.toggle('rb-open');b.textContent=o?'Skrij':'Preberi več';});});
 })();
 }catch(e){}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();})();
