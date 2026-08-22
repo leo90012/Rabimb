@@ -290,12 +290,21 @@
     const subStarted = (state.narocnine || []).some((x) => x.datum_od && String(x.status || "").toLowerCase() === "aktivna");
     const subBadge = neplacani.length ? subStatusBadge("neaktivna") : (subStarted ? subStatusBadge("aktivna") : (ordersAll.length ? subStatusBadge("v dostavi") : subStatusBadge(k.status_narocnine)));
     const parseAmt = (txt) => { if (!txt) return 0; const before = String(txt).split("/mesec")[0]; const nums = before.match(/\d+(?:[.,]\d+)?/g); if (!nums) return 0; const v = parseFloat(nums[nums.length - 1].replace(/\./g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
-    const neplacanoSection = neplacani.length ? `<div class="card" style="border-radius:6px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Neplačana naročila</h3><button class="btn outline small" id="selAllUnpaid" type="button">Izberi vsa neplačana</button></div>
-      ${neplacani.map((o) => `<label class="row selectable"><input type="checkbox" class="check unpaid-check" value="${o.id}" data-amount="${parseAmt(o.cena_opis)}" data-ref="${esc(o.stevilka || "")}" />
-        <span class="main"><span class="t">Naročilo ${esc(o.stevilka || ("#" + o.id))} <span style="background:#fdeceb;color:#a01810;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:4px">Ni plačano</span></span>
-        <span class="s">${esc(o.paket || "")}${o.cena_opis ? " - " + esc(o.cena_opis) : ""}</span></span></label>`).join("")}
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap"><div class="muted" id="unpaidTotal">Izbrano: 0,00 €</div><button class="btn primary" id="payUnpaid" disabled>Plačilo izbranih (0)</button></div>
+    const vidnaNarocila = ordersAll.filter((o) => !((o.status || "").toLowerCase().includes("preklic")));
+    const badgePaid = `<span style="background:#e6f6ec;color:#0d7a3a;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:4px">Plačano</span>`;
+    const badgeUnpaid = `<span style="background:#fdeceb;color:#a01810;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:4px">Ni plačano</span>`;
+    const orderLine = (o) => {
+      const paid = o.placano === true;
+      const inner = `<span class="main"><span class="t">Naročilo ${esc(o.stevilka || ("#" + o.id))} ${paid ? badgePaid : badgeUnpaid}</span>
+        <span class="s">${esc(o.paket || "")}${o.cena_opis ? " - " + esc(o.cena_opis) : ""}</span></span>`;
+      return paid
+        ? `<div class="row">${inner}</div>`
+        : `<label class="row selectable"><input type="checkbox" class="check unpaid-check" value="${o.id}" data-amount="${parseAmt(o.cena_opis)}" data-ref="${esc(o.stevilka || "")}" />${inner}</label>`;
+    };
+    const neplacanoSection = vidnaNarocila.length ? `<div class="card" style="border-radius:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Naročila in plačila</h3>${neplacani.length ? `<button class="btn outline small" id="selAllUnpaid" type="button">Izberi vsa neplačana</button>` : ""}</div>
+      ${vidnaNarocila.map(orderLine).join("")}
+      ${neplacani.length ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap"><div class="muted" id="unpaidTotal">Izbrano: 0,00 €</div><button class="btn primary" id="payUnpaid" disabled>Plačilo izbranih (0)</button></div>` : ""}
     </div>` : "";
     const skl = boxi.filter(isStorage), naj = boxi.filter((b) => !isStorage(b));
     const aktivna = narocila.filter((z) => { const s = (z.status || "").toLowerCase(); return !s.includes("zakljuc") && !s.includes("zaključ") && !s.includes("preklic") && !s.includes("dostavlj"); }).length;
@@ -531,7 +540,39 @@
     if (!state.session) { state.kupec = null; showAuth("login"); return; }
     if (!state.kupec) { APP.innerHTML = `<div class="boot"><div class="spinner"></div></div>`; await loadKupec(); }
     if (!state.kupec) { showNotLinked(); return; }
+    await handlePlacilo();
     renderTab();
+  }
+  function orderAmount(o) {
+    const tip = String(o.tip || "").toLowerCase(); const n = Number(o.st_boxov) || 0;
+    if (tip.includes("izpos")) { const m = { 20: 49, 40: 89, 60: 119, 80: 149 }; return m[n] || 0; }
+    const per = n <= 10 ? 3.90 : n <= 25 ? 3.60 : 3.30; return Math.round(n * per * 100) / 100;
+  }
+  async function handlePlacilo() {
+    if (state._placiloDone) return;
+    const qp = new URLSearchParams(location.search);
+    const pl = qp.get("placilo"), ref = qp.get("ref");
+    if (!pl) return;
+    state._placiloDone = true;
+    try { history.replaceState({}, "", location.pathname); } catch (e) {}
+    if (pl === "preklic") { toast("Plačilo je bilo preklicano. Naročilo ni potrjeno."); return; }
+    if (pl !== "uspeh" || !ref) return;
+    try {
+      const { data: o } = await state.sb.from("narocila").select("*").eq("stevilka", ref).order("id", { ascending: false }).limit(1).maybeSingle();
+      if (o) {
+        if (o.placano !== true) await state.sb.from("narocila").update({ placano: true, status: "placano" }).eq("stevilka", ref);
+        const { data: ex } = await state.sb.from("racuni").select("id").eq("stevilka", ref).limit(1).maybeSingle();
+        if (!ex) {
+          const total = orderAmount(o);
+          const osnova = Math.round((total / 1.22) * 100) / 100, ddv = Math.round((total - osnova) * 100) / 100;
+          const zap = new Date(); zap.setDate(zap.getDate() + 8);
+          const zapStr = zap.getFullYear() + "-" + String(zap.getMonth() + 1).padStart(2, "0") + "-" + String(zap.getDate()).padStart(2, "0");
+          const ri = await state.sb.from("racuni").insert({ stevilka: ref, osnova, ddv, znesek: total, valuta: "EUR", opis: (o.paket || "Rabimbox") + " - prvi mesec", status: "placan", email: o.email, ime: o.ime || null, priimek: o.priimek || null, datum_izdaje: todayISO(), datum_zapadlosti: zapStr });
+          if (!ri.error) { try { await state.sb.functions.invoke("poslji-racun", { body: { stevilka: ref } }); } catch (e) {} }
+        }
+      }
+      toast("Plačilo uspešno. Naročilo je označeno kot plačano.");
+    } catch (e) { console.warn("handlePlacilo:", e); toast("Plačilo prejeto. Osvežujem status…"); }
   }
   boot();
 })();
