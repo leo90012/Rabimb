@@ -359,8 +359,19 @@
     var per=n<=10?3.90:n<=25?3.60:3.30;return Math.round(n*per*100)/100;
   }
   async function potrdiPlacilo(ref){
-    // Fallback (če webhook ne označi): ob vrnitvi s Stripe označi naročilo plačano in izda račun.
+    // Ob vrnitvi s Stripe označi naročilo kot plačano in izda račun.
     if(!sb||!ref)return;
+    // 1) Strežniška potrditev (service-role -> obide RLS; preveri sejo pri Stripe)
+    var sid=new URLSearchParams(location.search).get("session_id");
+    if(sid){
+      var slugs=["rapid-api","stripe-checkout","Stripe-checkout"];
+      for(var i=0;i<slugs.length;i++){
+        try{ var cr=await sb.functions.invoke(slugs[i],{body:{confirm:true,session_id:sid}});
+          if(cr&&!cr.error&&cr.data&&cr.data.ok){ return; }
+        }catch(e){}
+      }
+    }
+    // 2) Rezerva: posodobitev iz brskalnika (če strežniška potrditev ni uspela)
     try{
       await loadSession();
       var oq=await sb.from("narocila").select("*").eq("stevilka",ref).order("id",{ascending:false}).limit(1).maybeSingle();

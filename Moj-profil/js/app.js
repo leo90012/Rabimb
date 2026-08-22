@@ -557,6 +557,17 @@
     try { history.replaceState({}, "", location.pathname); } catch (e) {}
     if (pl === "preklic") { toast("Plačilo je bilo preklicano. Naročilo ni potrjeno."); return; }
     if (pl !== "uspeh" || !ref) return;
+    // 1) Strežniška potrditev (service-role -> obide RLS; preveri sejo pri Stripe)
+    const sid = qp.get("session_id");
+    if (sid) {
+      for (const slug of ["rapid-api", "stripe-checkout", "Stripe-checkout"]) {
+        try {
+          const cr = await state.sb.functions.invoke(slug, { body: { confirm: true, session_id: sid } });
+          if (cr && !cr.error && cr.data && cr.data.ok) { toast("Plačilo uspešno. Naročilo je označeno kot plačano."); return; }
+        } catch (e) {}
+      }
+    }
+    // 2) Rezerva: posodobitev iz brskalnika
     try {
       const { data: o } = await state.sb.from("narocila").select("*").eq("stevilka", ref).order("id", { ascending: false }).limit(1).maybeSingle();
       if (o) {

@@ -41,10 +41,39 @@ Deno.serve(async (req) => {
       httpClient: Stripe.createFetchHttpClient(),
     });
 
-    const { ref, pageUrl } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const d = (dt: Date) => dt.toISOString().slice(0, 10);
+
+    // --- Potrditev plačila (service-role -> obide RLS; preveri pri Stripe, da je res plačano) ---
+    if (body.confirm && body.session_id) {
+      const cs = await stripe.checkout.sessions.retrieve(String(body.session_id));
+      const ref0 = cs && cs.metadata ? cs.metadata.ref : null;
+      const paid = !!cs && cs.payment_status === "paid";
+      if (paid && ref0) {
+        const { data: o0 } = await sb.from("narocila").select("*").eq("stevilka", ref0).order("id", { ascending: false }).limit(1).maybeSingle();
+        await sb.from("narocila").update({ placano: true, status: "placano" }).eq("stevilka", ref0);
+        if (o0) {
+          const { data: obstoj } = await sb.from("racuni").select("id").eq("stevilka", ref0).limit(1).maybeSingle();
+          if (!obstoj) {
+            const total = znesekZa(o0);
+            const osnova = Math.round((total / 1.22) * 100) / 100;
+            const ddv = Math.round((total - osnova) * 100) / 100;
+            const zap = new Date(); zap.setDate(zap.getDate() + 8);
+            let kupec_id: number | null = null;
+            try { const { data: k } = await sb.from("kupci").select("id").eq("email", o0.email).limit(1).maybeSingle(); if (k) kupec_id = k.id; } catch (_) { /* ignore */ }
+            await sb.from("racuni").insert({ stevilka: ref0, kupec_id, osnova, ddv, znesek: total, valuta: "EUR", opis: (o0.paket || "Rabimbox") + " - prvi mesec", status: "placan", email: o0.email, ime: o0.ime, priimek: o0.priimek, datum_izdaje: d(new Date()), datum_zapadlosti: d(zap) });
+            try { await fetch(SUPABASE_URL + "/functions/v1/poslji-racun", { method: "POST", headers: { "Authorization": "Bearer " + SERVICE_ROLE, "apikey": SERVICE_ROLE, "Content-Type": "application/json" }, body: JSON.stringify({ stevilka: ref0 }) }); } catch (_) { /* ignore */ }
+          }
+        }
+      }
+      return new Response(JSON.stringify({ ok: true, paid }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
+    // --- Ustvari plačilno sejo ---
+    const ref = body.ref, pageUrl = body.pageUrl;
     if (!ref) throw new Error("Manjka ref (številka naročila).");
 
-    const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data: o, error } = await sb.from("narocila").select("*").eq("stevilka", ref).order("id", { ascending: false }).limit(1).maybeSingle();
     if (error || !o) throw new Error("Naročilo ni najdeno.");
 
@@ -66,7 +95,7 @@ Deno.serve(async (req) => {
         },
       }],
       metadata: { ref: String(ref) },
-      success_url: base + "?placilo=uspeh&ref=" + encodeURIComponent(String(ref)),
+      success_url: base + "?placilo=uspeh&ref=" + encodeURIComponent(String(ref)) + "&session_id={CHECKOUT_SESSION_ID}",
       cancel_url: base + "?placilo=preklic&ref=" + encodeURIComponent(String(ref)),
     });
 
