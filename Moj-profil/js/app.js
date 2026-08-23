@@ -290,21 +290,14 @@
     const subStarted = (state.narocnine || []).some((x) => x.datum_od && String(x.status || "").toLowerCase() === "aktivna");
     const subBadge = neplacani.length ? subStatusBadge("neaktivna") : (subStarted ? subStatusBadge("aktivna") : (ordersAll.length ? subStatusBadge("v dostavi") : subStatusBadge(k.status_narocnine)));
     const parseAmt = (txt) => { if (!txt) return 0; const before = String(txt).split("/mesec")[0]; const nums = before.match(/\d+(?:[.,]\d+)?/g); if (!nums) return 0; const v = parseFloat(nums[nums.length - 1].replace(/\./g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
-    const vidnaNarocila = ordersAll.filter((o) => !((o.status || "").toLowerCase().includes("preklic")));
-    const badgePaid = `<span style="background:#e6f6ec;color:#0d7a3a;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:4px">Plačano</span>`;
     const badgeUnpaid = `<span style="background:#fdeceb;color:#a01810;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:4px">Ni plačano</span>`;
-    const orderLine = (o) => {
-      const paid = o.placano === true;
-      const inner = `<span class="main"><span class="t">Naročilo ${esc(o.stevilka || ("#" + o.id))} ${paid ? badgePaid : badgeUnpaid}</span>
-        <span class="s">${esc(o.paket || "")}${o.cena_opis ? " - " + esc(o.cena_opis) : ""}</span></span>`;
-      return paid
-        ? `<div class="row">${inner}</div>`
-        : `<label class="row selectable"><input type="checkbox" class="check unpaid-check" value="${o.id}" data-amount="${parseAmt(o.cena_opis)}" data-ref="${esc(o.stevilka || "")}" />${inner}</label>`;
-    };
-    const neplacanoSection = vidnaNarocila.length ? `<div class="card" style="border-radius:6px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Naročila in plačila</h3>${neplacani.length ? `<button class="btn outline small" id="selAllUnpaid" type="button">Izberi vsa neplačana</button>` : ""}</div>
-      ${vidnaNarocila.map(orderLine).join("")}
-      ${neplacani.length ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap"><div class="muted" id="unpaidTotal">Izbrano: 0,00 €</div><button class="btn primary" id="payUnpaid" disabled>Plačilo izbranih (0)</button></div>` : ""}
+    const orderLine = (o) => `<label class="row selectable"><input type="checkbox" class="check unpaid-check" value="${o.id}" data-amount="${parseAmt(o.cena_opis)}" data-ref="${esc(o.stevilka || "")}" />
+      <span class="main"><span class="t">Naročilo ${esc(o.stevilka || ("#" + o.id))} ${badgeUnpaid}</span>
+      <span class="s">${esc(o.paket || "")}${o.cena_opis ? " - " + esc(o.cena_opis) : ""}</span></span></label>`;
+    const neplacanoSection = neplacani.length ? `<div class="card" style="border-radius:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">Neplačana naročila</h3><button class="btn outline small" id="selAllUnpaid" type="button">Izberi vsa neplačana</button></div>
+      ${neplacani.map(orderLine).join("")}
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap"><div class="muted" id="unpaidTotal">Izbrano: 0,00 €</div><button class="btn primary" id="payUnpaid" disabled>Plačilo izbranih (0)</button></div>
     </div>` : "";
     const skl = boxi.filter(isStorage), naj = boxi.filter((b) => !isStorage(b));
     const aktivna = narocila.filter((z) => { const s = (z.status || "").toLowerCase(); return !s.includes("zakljuc") && !s.includes("zaključ") && !s.includes("preklic") && !s.includes("dostavlj"); }).length;
@@ -395,11 +388,25 @@
   }
 
   async function viewNarocila() {
-    const { data: narocila = [], error } = await q.narocila();
-    if (error) throw error;
-    return `${pageHead("narocila")}<p class="page-sub">Pregled oddanih naročil za dostavo, prevzem in vrnitev boxov.</p>
+    const email = (state.session && state.session.user && state.session.user.email) || (state.kupec && state.kupec.email) || "";
+    let orders = [];
+    try { const { data } = await state.sb.from("narocila").select("*").eq("email", email).order("id", { ascending: false }); orders = (data || []).filter((o) => !((o.status || "").toLowerCase().includes("preklic"))); } catch (e) {}
+    let zahteve = [];
+    try { const { data } = await q.narocila(); zahteve = data || []; } catch (e) {}
+    const narocilaCard = orders.length ? `<div class="section-title">Moja naročila</div><div class="card">${orders.map(narociloRow).join("")}</div>` : "";
+    const zahteveCard = zahteve.length ? `<div class="section-title">Zahteve za dostavo / prevzem</div><div class="card">${zahteve.map(orderRow).join("")}</div>` : "";
+    const prazno = (!orders.length && !zahteve.length) ? `<div class="empty"><p>Še nimaš oddanih naročil.</p></div>` : "";
+    return `${pageHead("narocila")}<p class="page-sub">Pregled tvojih naročil ter zahtev za dostavo, prevzem in vrnitev boxov.</p>
       <button class="btn primary auto" id="newOrderBtn" style="margin-bottom:16px">Novo naročilo</button>
-      ${narocila.length ? `<div class="card">${narocila.map(orderRow).join("")}</div>` : `<div class="empty"><p>Še nimaš oddanih naročil.</p></div>`}`;
+      ${narocilaCard}${zahteveCard}${prazno}`;
+  }
+  function narociloRow(o) {
+    const paid = o.placano === true;
+    const badge = paid ? `<span class="badge green">Plačano</span>` : `<span class="badge red">Ni plačano</span>`;
+    const termin = o.datum_dostave ? (fmtDate(o.datum_dostave) + (o.cas_dostave ? " " + o.cas_dostave : "")) : "";
+    return `<div class="row"><span class="ico">${ICON.receipt}</span>
+      <div class="main"><div class="t">Naročilo ${esc(o.stevilka || ("#" + o.id))} ${badge}</div>
+      <div class="s">${esc(o.paket || "")}${o.cena_opis ? " · " + esc(o.cena_opis) : ""}${termin ? " · Termin: " + esc(termin) : ""}</div></div></div>`;
   }
   function wireNarocila() { const b = $("#newOrderBtn"); if (b) b.addEventListener("click", () => { window.location.href = "../narocilo/index.html"; }); }
   function orderRow(z) {

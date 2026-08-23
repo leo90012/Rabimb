@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
         if (o0) {
           const { data: obstoj } = await sb.from("racuni").select("id").eq("stevilka", ref0).limit(1).maybeSingle();
           if (!obstoj) {
-            const total = znesekZa(o0);
+            // Dejansko plačani znesek (upošteva kupon/popust); rezerva je izračun iz naročila
+            const total = (typeof cs.amount_total === "number" ? cs.amount_total / 100 : znesekZa(o0));
             const osnova = Math.round((total / 1.22) * 100) / 100;
             const ddv = Math.round((total - osnova) * 100) / 100;
             const zap = new Date(); zap.setDate(zap.getDate() + 8);
@@ -85,6 +86,7 @@ Deno.serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+      allow_promotion_codes: true,
       customer_email: o.email || undefined,
       line_items: [{
         quantity: 1,
