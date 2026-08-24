@@ -310,6 +310,8 @@
       if(!sb)throw new Error("Supabase ni na voljo.");
       var r=await sb.from("narocila").insert(rec);
       if(r.error)throw r.error;
+      // Potrditev naročila po e-pošti (če je funkcija/Resend nastavljen)
+      try{ sb.functions.invoke("poslji-obvestilo",{body:{tip:"narocilo",ref:ref}}); }catch(e){}
       // Stripe plačilo (Checkout) – preusmeritev na varno plačilno stran
       try{
         var scr=null,lastErr=null;

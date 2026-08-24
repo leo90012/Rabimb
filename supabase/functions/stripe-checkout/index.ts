@@ -53,6 +53,8 @@ Deno.serve(async (req) => {
       if (paid && ref0) {
         const { data: o0 } = await sb.from("narocila").select("*").eq("stevilka", ref0).order("id", { ascending: false }).limit(1).maybeSingle();
         await sb.from("narocila").update({ placano: true }).eq("stevilka", ref0);
+        // Potrditev plačila po e-pošti (neobvezno; ne blokira odgovora)
+        try { await fetch(SUPABASE_URL + "/functions/v1/poslji-obvestilo", { method: "POST", headers: { "Authorization": "Bearer " + SERVICE_ROLE, "apikey": SERVICE_ROLE, "Content-Type": "application/json" }, body: JSON.stringify({ tip: "placilo", ref: ref0 }) }); } catch (_) { /* ignore */ }
         if (o0) {
           const { data: obstoj } = await sb.from("racuni").select("id").eq("stevilka", ref0).limit(1).maybeSingle();
           if (!obstoj) {
