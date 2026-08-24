@@ -121,8 +121,8 @@
       const orders = data || [];
       const unpaid = orders.some((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
       const started = (state.narocnine || []).some((x) => x.datum_od && String(x.status || "").toLowerCase() === "aktivna");
-      if (unpaid) return subStatusBadge("neaktivna");
       if (started) return subStatusBadge("aktivna");
+      if (unpaid) return subStatusBadge("neaktivna");
       if (orders.length) return subStatusBadge("v dostavi");
     } catch (e) {}
     return subStatusBadge(k.status_narocnine);
@@ -262,16 +262,30 @@
     narocila: () => state.sb.from("zahteve_dostave").select("*").eq("kupec_id", state.kupec.id).order("datum_zahteve", { ascending: false }),
     narocnine: () => state.sb.from("narocnine").select("*").eq("kupec_id", state.kupec.id).order("datum_do", { ascending: false }),
   };
+  // Naročnina: obdobje 1 mesec. Če datum_do ni nastavljen, ga izračunamo iz datum_od + 1 mesec.
+  function addMonths(dateStr, n) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    d.setMonth(d.getMonth() + n);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
   // Veljavnost naročnine: vir resnice je tabela narocnine, kupci.* je samo odsev
   function narocninaDo(box) {
     if (box && box.narocnina_do) return box.narocnina_do;
-    const n = (state.narocnine || []).filter((x) => (x.status || "") === "aktivna");
     if (box && box.narocnina_id) {
       const m = (state.narocnine || []).find((x) => Number(x.id) === Number(box.narocnina_id));
-      if (m) return m.datum_do;
+      if (m) return m.datum_do || addMonths(m.datum_od, 1);
     }
-    if (n.length) return n.map((x) => x.datum_do).filter(Boolean).sort().pop();
-    return state.kupec ? state.kupec.datum_konca_narocnine : null;
+    const n = (state.narocnine || []).filter((x) => (x.status || "") === "aktivna");
+    if (n.length) {
+      const dd = n.map((x) => x.datum_do).filter(Boolean).sort().pop();
+      if (dd) return dd;
+      const od = n.map((x) => x.datum_od).filter(Boolean).sort().pop();
+      if (od) return addMonths(od, 1);
+    }
+    if (state.kupec && state.kupec.datum_konca_narocnine) return state.kupec.datum_konca_narocnine;
+    return addMonths(narocninaOd(), 1);
   }
   function narocninaOd() {
     const n = (state.narocnine || []).filter((x) => (x.status || "") === "aktivna");
@@ -292,7 +306,7 @@
       neplacani = ordersAll.filter((o) => o.placano !== true && !((o.status || "").toLowerCase().includes("preklic")));
     } catch (e) {}
     const subStarted = (state.narocnine || []).some((x) => x.datum_od && String(x.status || "").toLowerCase() === "aktivna");
-    const subBadge = neplacani.length ? subStatusBadge("neaktivna") : (subStarted ? subStatusBadge("aktivna") : (ordersAll.length ? subStatusBadge("v dostavi") : subStatusBadge(k.status_narocnine)));
+    const subBadge = subStarted ? subStatusBadge("aktivna") : (neplacani.length ? subStatusBadge("neaktivna") : (ordersAll.length ? subStatusBadge("v dostavi") : subStatusBadge(k.status_narocnine)));
     const parseAmt = (txt) => { if (!txt) return 0; const before = String(txt).split("/mesec")[0]; const nums = before.match(/\d+(?:[.,]\d+)?/g); if (!nums) return 0; const v = parseFloat(nums[nums.length - 1].replace(/\./g, "").replace(",", ".")); return isNaN(v) ? 0 : v; };
     const badgeUnpaid = `<span style="background:#fdeceb;color:#a01810;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:4px">Ni plačano</span>`;
     const orderLine = (o) => `<label class="row selectable"><input type="checkbox" class="check unpaid-check" value="${o.id}" data-amount="${parseAmt(o.cena_opis)}" data-ref="${esc(o.stevilka || "")}" />
@@ -578,22 +592,11 @@
         } catch (e) {}
       }
     }
-    // 2) Rezerva: posodobitev iz brskalnika
+    // 2) Rezerva: samo poskus posodobitve naročila (račun izda strežniška potrditev/webhook).
+    //    Namenoma NE ustvarimo računa iz brskalnika, da ne pride do neskladja.
     try {
-      const { data: o } = await state.sb.from("narocila").select("*").eq("stevilka", ref).order("id", { ascending: false }).limit(1).maybeSingle();
-      if (o) {
-        if (o.placano !== true) await state.sb.from("narocila").update({ placano: true, status: "placano" }).eq("stevilka", ref);
-        const { data: ex } = await state.sb.from("racuni").select("id").eq("stevilka", ref).limit(1).maybeSingle();
-        if (!ex) {
-          const total = orderAmount(o);
-          const osnova = Math.round((total / 1.22) * 100) / 100, ddv = Math.round((total - osnova) * 100) / 100;
-          const zap = new Date(); zap.setDate(zap.getDate() + 8);
-          const zapStr = zap.getFullYear() + "-" + String(zap.getMonth() + 1).padStart(2, "0") + "-" + String(zap.getDate()).padStart(2, "0");
-          const ri = await state.sb.from("racuni").insert({ stevilka: ref, osnova, ddv, znesek: total, valuta: "EUR", opis: (o.paket || "Rabimbox") + " - prvi mesec", status: "placan", email: o.email, ime: o.ime || null, priimek: o.priimek || null, datum_izdaje: todayISO(), datum_zapadlosti: zapStr });
-          if (!ri.error) { try { await state.sb.functions.invoke("poslji-racun", { body: { stevilka: ref } }); } catch (e) {} }
-        }
-      }
-      toast("Plačilo uspešno. Naročilo je označeno kot plačano.");
+      await state.sb.from("narocila").update({ placano: true }).eq("stevilka", ref);
+      toast("Plačilo prejeto. Osvežujem status…");
     } catch (e) { console.warn("handlePlacilo:", e); toast("Plačilo prejeto. Osvežujem status…"); }
   }
   boot();

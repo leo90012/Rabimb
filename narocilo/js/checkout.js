@@ -371,20 +371,12 @@
         }catch(e){}
       }
     }
-    // 2) Rezerva: posodobitev iz brskalnika (če strežniška potrditev ni uspela)
+    // 2) Rezerva: samo poskus posodobitve naročila (račun izda strežniška potrditev/webhook).
+    //    Namenoma NE ustvarimo računa iz brskalnika, da ne pride do neskladja
+    //    (plačan račun + neplačano naročilo, če RLS blokira update naročila).
     try{
       await loadSession();
-      var oq=await sb.from("narocila").select("*").eq("stevilka",ref).order("id",{ascending:false}).limit(1).maybeSingle();
-      var o=oq&&oq.data?oq.data:null; if(!o)return;
-      if(o.placano!==true){ await sb.from("narocila").update({placano:true,status:"placano"}).eq("stevilka",ref); }
-      var rq=await sb.from("racuni").select("id").eq("stevilka",ref).limit(1).maybeSingle();
-      if(!(rq&&rq.data)){
-        var total=znesekZaNarocilo(o);var osnova=Math.round((total/1.22)*100)/100;var ddv=Math.round((total-osnova)*100)/100;
-        var zap=new Date();zap.setDate(zap.getDate()+8);var zapStr=zap.getFullYear()+"-"+String(zap.getMonth()+1).padStart(2,"0")+"-"+String(zap.getDate()).padStart(2,"0");
-        var racun={stevilka:ref,osnova:osnova,ddv:ddv,znesek:total,valuta:"EUR",opis:(o.paket||"Rabimbox")+" - prvi mesec",status:"placan",email:o.email,ime:o.ime||null,priimek:o.priimek||null,datum_izdaje:todayStr(),datum_zapadlosti:zapStr};
-        var ri=await sb.from("racuni").insert(racun);
-        if(!ri.error){try{await sb.functions.invoke("poslji-racun",{body:{stevilka:ref}});}catch(e){}}
-      }
+      await sb.from("narocila").update({placano:true}).eq("stevilka",ref);
     }catch(e){console.warn("potrdiPlacilo:",(e&&e.message)?e.message:e);}
   }
   function viewPlacanoUspeh(ref){
