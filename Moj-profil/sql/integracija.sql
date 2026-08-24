@@ -222,9 +222,10 @@ language sql stable security definer set search_path = public as $$
   )
   select * from zdruzeno
   where public.is_staff()
+    and datum_dostave is not null      -- naročila brez termina se ne prikazujejo
   order by (status in ('zakljuceno','preklicano')),   -- odprta najprej
            (status <> 'nova'),                        -- nova čisto na vrh
-           datum_dostave nulls last, ustvarjeno desc
+           datum_dostave, ustvarjeno desc
   offset p_offset limit p_limit;
 $$;
 
@@ -235,20 +236,34 @@ grant execute on function public.sklad_zahteve(int,int) to authenticated;
 -- 3b) Škatle, vezane na posamezno naročilo/zahtevo
 -- ------------------------------------------------------------
 create or replace function public.sklad_zahteva_skatle(p_id bigint, p_vir text default 'zahteva')
-returns table (id bigint, barkoda text, status text, lokacija text)
+returns table (id bigint, barkoda text, status text, lokacija text, vezana boolean)
 language sql stable security definer set search_path = public as $$
-  select s.id, s.barkoda, s.status, s.lokacija
-  from public.skatle s
-  where public.is_staff() and (
-    (p_vir = 'zahteva' and s.id in (
-        select zs.skatla_id from public.zahteve_dostave_skatle zs where zs.zahteva_id = p_id))
-    or
-    (p_vir = 'narocilo' and s.narocnina_id in (
-        select n.id from public.narocnine n where n.narocilo_id = p_id))
+  with kupec as (
+    select case when p_vir = 'narocilo'
+                then (select n.kupec_id from public.narocila n where n.id = p_id)
+                else (select z.kupec_id from public.zahteve_dostave z where z.id = p_id) end as kid
+  ),
+  vezane as (
+    select s.id
+    from public.skatle s
+    where (p_vir = 'zahteva' and s.id in (
+             select zs.skatla_id from public.zahteve_dostave_skatle zs where zs.zahteva_id = p_id))
+       or (p_vir = 'narocilo' and s.narocnina_id in (
+             select n.id from public.narocnine n where n.narocilo_id = p_id))
   )
-  order by s.id;
+  select s.id, s.barkoda, s.status, s.lokacija, (v.id is not null) as vezana
+  from public.skatle s
+  left join vezane v on v.id = s.id
+  where public.is_staff()
+    and (
+      s.id in (select id from vezane)
+      -- ce naročilu ni vezana nobena škatla, pokažemo vse škatle te stranke
+      or (not exists (select 1 from vezane) and s.kupec_id = (select kid from kupec))
+    )
+  order by (v.id is null), s.id;
 $$;
 
+drop function if exists public.sklad_zahteva_skatle(bigint);
 revoke all on function public.sklad_zahteva_skatle(bigint,text) from public, anon;
 grant execute on function public.sklad_zahteva_skatle(bigint,text) to authenticated;
 
