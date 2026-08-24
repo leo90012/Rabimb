@@ -70,15 +70,19 @@
   }
 
   const REQ_STATUS = {
-    nova:        { label: "Oddano",      color: "amber" },
-    novo:        { label: "Oddano",      color: "amber" },
-    potrjena:    { label: "Potrjeno",    color: "blue" },
-    potrjeno:    { label: "Potrjeno",    color: "blue" },
-    v_izvajanju: { label: "V izvajanju", color: "blue" },
-    zakljucena:  { label: "Zaključeno",  color: "green" },
-    zakljuceno:  { label: "Zaključeno",  color: "green" },
-    preklicana:  { label: "Preklicano",  color: "red" },
-    preklicano:  { label: "Preklicano",  color: "red" },
+    nova:         { label: "Oddano",            color: "amber" },
+    novo:         { label: "Oddano",            color: "amber" },
+    caka_dostavo: { label: "Potrjeno – čaka na dostavo", color: "blue" },
+    pri_stranki:  { label: "Dostavljeno",       color: "green" },
+    v_skladiscu:  { label: "Prevzeto v skladišče", color: "blue" },
+    zakljucena:   { label: "Zaključeno",        color: "green" },
+    zakljuceno:   { label: "Zaključeno",        color: "green" },
+    preklicana:   { label: "Preklicano",        color: "red" },
+    preklicano:   { label: "Preklicano",        color: "red" },
+    // stare vrednosti (za nazaj združljivost)
+    potrjena:     { label: "Potrjeno",          color: "blue" },
+    potrjeno:     { label: "Potrjeno",          color: "blue" },
+    v_izvajanju:  { label: "V izvajanju",       color: "blue" },
   };
   function reqStatusBadge(s) {
     const key = String(s || "nova").toLowerCase();

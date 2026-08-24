@@ -305,7 +305,7 @@
       cena_opis:cenaOpis(),stopnice:false,krhko:false,pomoc_polnjenje:s.extras.pomoc,
       opis_lokacije:("Vrsta objekta: "+(s.opis||"-")+" | Nadstropje: "+(s.nadstropje||"-")+" | Dvigalo: "+(s.extras.dvigalo?"Da":"Ne")),naslov:s.naslov||null,enota:null,postna_stevilka:s.postna||null,mesto:s.mesto||null,telefon:s.telefon||null,
       datum_dostave:s.datum||null,cas_dostave:s.cas||null,ime:s.ime||null,priimek:s.priimek||null,
-      email:s.email,stevilka:ref,placano:false,status:"novo"};
+      email:s.email,stevilka:ref,placano:false,status:"nova"};
     try{
       if(!sb)throw new Error("Supabase ni na voljo.");
       var r=await sb.from("narocila").insert(rec);

@@ -248,4 +248,20 @@ svg { display: block; }
 .nadzor-choice .nchoice .cnt { display: block; font-weight: 700; font-size: 30px; line-height: 1; color: #0067ff; margin-bottom: 4px; }
 .nadzor-choice .nchoice .t { display: block; font-weight: 700; font-size: 18px; color: #2a3342; }
 .nadzor-choice .nchoice .d { display: block; color: #7b8794; font-size: 13px; margin-top: 4px; }
-.kv { display: flex; justify-content: space-between; align-items: center;
+.kv { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.kv:last-child { border-bottom: 0; }
+.kv .k { color: var(--muted); }
+.kv .v { color: var(--heading); font-weight: 600; text-align: right; }
+
+/* ===== Mobilna optimizacija ===== */
+button, .btn, a.btn, .row.selectable, .nchoice, .tab { -webkit-tap-highlight-color: rgba(0,0,0,.06); }
+@media (max-width: 600px) {
+  /* 16px prepreči samodejni zoom polja na iOS */
+  .field input, .field select, .field textarea { font-size: 16px; padding: 12px 13px; }
+  /* Udobnejši gumbi in vrstice za dotik */
+  .btn { padding: 13px 18px; min-height: 46px; }
+  .btn.small { padding: 10px 14px; font-size: 13.5px; min-height: 40px; }
+  .row { padding-top: 12px; padding-bottom: 12px; }
+  .select-box input, .check { width: 20px; height: 20px; }
+  .page-sub { margin-bottom: 14px; }
+}
