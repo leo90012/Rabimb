@@ -91,8 +91,8 @@ update public.kupci set status_narocnine = 'preklicana' where lower(status_naroc
 
 create or replace function public.rb_trajanje(p_tip text)
 returns interval language sql immutable as $$
-  select case when lower(coalesce(p_tip,'')) like 'sklad%'
-              then interval '3 months' else interval '1 month' end;
+  -- Min. obdobje naročnine je 1 mesec (izposoja in skladiščenje).
+  select interval '1 month';
 $$;
 
 create or replace function public.rb_narocnina_datumi()
