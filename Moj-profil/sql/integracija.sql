@@ -361,3 +361,35 @@ grant execute on function public.sklad_stevci() to authenticated;
 -- select id, tip, datum_od, datum_do, status from public.narocnine order by id;
 -- select * from public.sklad_zahteve(0,50);
 -- select * from public.sklad_stevci();
+
+
+-- ============================================================
+--  DEL 4) VAROVALO: samodejni prevod starih vrednosti statusa
+--  Poskrbi, da naročilo s spletne strani ne pade, tudi če
+--  koda še vpisuje staro vrednost (npr. "novo" namesto "nova").
+-- ============================================================
+create or replace function public.rb_normaliziraj_status()
+returns trigger language plpgsql as $$
+begin
+  new.status := case
+    when new.status is null then 'nova'
+    when lower(new.status) like 'nov%' then 'nova'
+    when lower(new.status) like 'caka%' or lower(new.status) like 'čaka%' or lower(new.status) like 'potrj%' then 'caka_dostavo'
+    when lower(new.status) like 'pri stranki%' or lower(new.status) like 'pri_stranki%' or lower(new.status) like 'dostavlj%' then 'pri_stranki'
+    when lower(new.status) like 'v sklad%' or lower(new.status) like 'v_sklad%' or lower(new.status) like 'prevzet%' then 'v_skladiscu'
+    when lower(new.status) like 'zaklju%' or lower(new.status) like 'opravlj%' then 'zakljuceno'
+    when lower(new.status) like 'preklic%' or lower(new.status) like 'zavrn%' then 'preklicano'
+    else new.status end;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_norm_status_narocila on public.narocila;
+create trigger trg_norm_status_narocila
+  before insert or update of status on public.narocila
+  for each row execute function public.rb_normaliziraj_status();
+
+drop trigger if exists trg_norm_status_zahteve on public.zahteve_dostave;
+create trigger trg_norm_status_zahteve
+  before insert or update of status on public.zahteve_dostave
+  for each row execute function public.rb_normaliziraj_status();
