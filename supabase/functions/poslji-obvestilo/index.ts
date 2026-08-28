@@ -123,6 +123,24 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, sent: "obnova" }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    if (tip === "povprasevanje") {
+      const to = body.email;
+      if (!to) throw new Error("Manjka email za povpraševanje.");
+      const ime = body.ime ? `, ${esc(body.ime)}` : "";
+      const tabela = `<table style="width:100%;border-collapse:collapse;margin-top:6px">
+        ${(body.ime || body.priimek) ? vrstica("Ime in priimek", [body.ime, body.priimek].filter(Boolean).join(" ")) : ""}
+        ${body.email ? vrstica("E-pošta", String(body.email)) : ""}
+        ${body.telefon ? vrstica("Telefon", String(body.telefon)) : ""}
+        ${body.paket ? vrstica("Paket", String(body.paket)) : ""}
+      </table>`;
+      const vpr = body.vprasanje ? `<div style="margin-top:14px"><div style="color:#7b8794;font-size:13px;margin-bottom:4px">Vaše sporočilo:</div><div style="background:#f4f6f9;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.6;color:#2a3342">${esc(body.vprasanje)}</div></div>` : "";
+      const telo = `<p style="font-size:14px;line-height:1.6;margin:0 0 4px">Pozdravljeni${ime}, hvala za vaše povpraševanje! Prejeli smo ga in vas bomo kontaktirali v najkrajšem možnem času.</p>
+        ${tabela}${vpr}
+        ${btn(PANEL_URL, "Moj račun")}`;
+      await posljiEmail(to, "Povzetek vašega povpraševanja – Rabimbox", ovoj("Povpraševanje je prejeto", telo));
+      return new Response(JSON.stringify({ ok: true, sent: "povprasevanje" }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
     // Paketni opomnik: pošlje vsem naročninam, ki se iztečejo čez N dni (privzeto 5).
     if (tip === "obnova_batch") {
       const dni = Number(body.dni) || 5;

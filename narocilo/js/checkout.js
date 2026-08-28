@@ -231,8 +231,10 @@
       if(!sb)throw new Error("Supabase ni na voljo.");
       var r=await sb.from("povprasevanja").insert(rec);
       if(r.error)throw r.error;
+      // Potrditveni e-mail s povzetkom povpraševanja (če je Resend nastavljen)
+      try{ sb.functions.invoke("poslji-obvestilo",{body:{tip:"povprasevanje",email:email,ime:ime,priimek:priimek,telefon:tel,paket:planLabel(),vprasanje:vpr}}); }catch(e){}
       render('<div class="done-wrap"><div class="done-check">'+ICON.check+'</div>'+
-        '<h1 class="co-title">Hvala!</h1><p class="co-sub">Kontaktirali vas bomo v najkrajšem možnem času.</p>'+
+        '<h1 class="co-title">Hvala!</h1><p class="co-sub">Kontaktirali vas bomo v najkrajšem možnem času. Povzetek smo poslali na vaš e-naslov.</p>'+
         '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a></div></div>');
     }catch(e){
       var body=encodeURIComponent("Ime: "+ime+" "+priimek+"\nE-pošta: "+email+"\nTelefon: "+tel+"\nPaket: "+planLabel()+" ("+(s.tip||"")+")\n\nVprašanje:\n"+vpr);
