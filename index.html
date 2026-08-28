@@ -217,7 +217,7 @@ html, body {
 <script>
 (function(){function run(){try{
 document.querySelectorAll('a[href$="cenik/index.html"],a[href$="o-nas/index.html"]').forEach(function(a){var li=a.closest('li');if(li&&!li.closest('#astra-footer-menu'))li.classList.add('rb-hide');});
-document.querySelectorAll('.menu-item-narocizdaj > a').forEach(function(a){a.style.setProperty('background','#6ec1e4','important');a.style.setProperty('color','#fff','important');a.style.setProperty('border-radius','6px','important');a.style.setProperty('padding','9px 20px','important');a.style.setProperty('font-weight','700','important');a.style.setProperty('display','inline-block','important');});
+document.querySelectorAll('.menu-item-narocizdaj > a').forEach(function(a){var li=a.parentElement;if(li){li.style.setProperty('display','flex','important');li.style.setProperty('align-items','center','important');}a.style.setProperty('background','#6ec1e4','important');a.style.setProperty('color','#fff','important');a.style.setProperty('border-radius','6px','important');a.style.setProperty('padding','9px 20px','important');a.style.setProperty('font-weight','700','important');a.style.setProperty('display','inline-block','important');a.style.setProperty('line-height','1.2','important');a.style.setProperty('height','auto','important');a.style.setProperty('align-self','center','important');});
 var fm=document.getElementById('astra-footer-menu');
 if(fm&&!document.getElementById('rb-footer')){var map={};fm.querySelectorAll('a').forEach(function(a){map[a.textContent.trim().toLowerCase()]=a.getAttribute('href');});
 function L(t,k){var h=map[k];return h?('<a href="'+h+'">'+t+'</a>'):'';}
