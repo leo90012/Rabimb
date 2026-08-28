@@ -218,6 +218,7 @@
     mode=mode||"login";closeAuthModal();
     var ov=document.createElement("div");ov.id="rb-auth-modal";ov.className="rb-modal-ov";
     ov.innerHTML='<div class="rb-modal"><button class="rb-modal-x" type="button" aria-label="Zapri">×</button>'+
+      '<div class="rb-modal-logo"><img src="Slike/5.png" alt="Rabimbox" /></div>'+
       '<h3 class="rb-modal-t">Za nadaljevanje se prijavi</h3>'+
       '<div class="rb-tabs"><button type="button" class="rb-tab" data-m="login">Prijava</button><button type="button" class="rb-tab" data-m="register">Registracija</button></div>'+
       '<div id="rb-auth-body"></div></div>';
