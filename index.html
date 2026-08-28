@@ -216,7 +216,7 @@ html, body {
 </style>
 <script>
 (function(){function run(){try{
-document.querySelectorAll('a[href$="cenik/index.html"],a[href$="o-nas/index.html"]').forEach(function(a){var li=a.closest('li');if(li&&!li.closest('#astra-footer-menu'))li.classList.add('rb-hide');});
+document.querySelectorAll('li.menu-item > a').forEach(function(a){if(a.closest('#astra-footer-menu')||a.closest('#rb-footer'))return;var _t=a.textContent.trim().toLowerCase();if(_t==='o nas'||_t==='cenik')a.parentElement.classList.add('rb-hide');});
 document.querySelectorAll('.menu-item-narocizdaj > a').forEach(function(a){var li=a.parentElement;if(li){li.style.setProperty('display','flex','important');li.style.setProperty('align-items','center','important');}a.style.setProperty('background','#6ec1e4','important');a.style.setProperty('color','#fff','important');a.style.setProperty('border-radius','3px','important');a.style.setProperty('padding','13px 34px','important');a.style.setProperty('font-weight','500','important');a.style.setProperty('font-size','15px','important');a.style.setProperty('display','inline-block','important');a.style.setProperty('line-height','1.2','important');a.style.setProperty('height','auto','important');a.style.setProperty('align-self','center','important');});
 var fm=document.getElementById('astra-footer-menu');
 if(fm&&!document.getElementById('rb-footer')){var map={};fm.querySelectorAll('a').forEach(function(a){map[a.textContent.trim().toLowerCase()]=a.getAttribute('href');});
@@ -225,7 +225,7 @@ var base=/\/(izposoja|skladiscenje|cenik|o-nas|blog|pravila-in-pogoji)\//i.test(
 var logoSrc=base+'Slike/cropped-3.png';
 var maps='https://www.google.com/maps/place//data=!4m2!3m1!1s0x4765336af314f7ab:0x9ac8dbcd3587e6c9?sa=X&ved=1t:8290&ictx=111';
 var f=document.createElement('div');f.id='rb-footer';
-f.innerHTML=(logoSrc?'<div class="col rb-logo"><img src="'+logoSrc+'" alt="Rabimbox" /></div>':'')+'<div class="col"><h4>Več informacij</h4>'+L('Skladiščenje','skladiščenje')+L('Izposoja','izposoja')+L('Cenik','cenik')+L('Pravila in pogoji','pravila in pogoji')+'</div>'+'<div class="col"><h4>O nas</h4>'+L('O nas','o nas')+L('Blog','blog')+'</div>'+'<div class="col"><h4>Kontakt</h4><a href="tel:+38640796040">+386 (0)40 796 040</a><a href="mailto:info@rabimbox.si">info@rabimbox.si</a><a href="'+maps+'" target="_blank" rel="noopener">Proletarska cesta 4, 1000 Ljubljana</a></div>';
+f.innerHTML=(logoSrc?'<div class="col rb-logo"><img src="'+logoSrc+'" alt="Rabimbox" /></div>':'')+'<div class="col"><h4>Več informacij</h4><a href="'+base+'skladiscenje/index.html">Skladiščenje</a><a href="'+base+'izposoja/index.html">Izposoja</a><a href="'+base+'cenik/index.html">Cenik</a><a href="'+base+'pravila-in-pogoji/index.html">Pravila in pogoji</a></div>'+'<div class="col"><h4>O nas</h4><a href="'+base+'o-nas/index.html">O nas</a><a href="'+base+'blog/index.html">Blog</a></div>'+'<div class="col"><h4>Kontakt</h4><a href="tel:+38640796040">+386 (0)40 796 040</a><a href="mailto:info@rabimbox.si">info@rabimbox.si</a><a href="'+maps+'" target="_blank" rel="noopener">Proletarska cesta 4, 1000 Ljubljana</a></div>';
 fm.parentNode.insertBefore(f,fm);}
 if(!document.getElementById('rb-cta-mob')){var _b=/\/(izposoja|skladiscenje|cenik|o-nas|blog|pravila-in-pogoji)\//i.test(location.pathname)?'../':'';var cta=document.createElement('div');cta.id='rb-cta-mob';cta.innerHTML='<a href="'+_b+'narocilo/index.html">Naroči zdaj</a>';document.body.appendChild(cta);}
 (function(){
