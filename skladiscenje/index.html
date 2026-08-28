@@ -174,14 +174,15 @@ html, body {
 #rb-footer .col a:hover{opacity:1;text-decoration:underline}
 #rb-footer .rb-logo img{height:64px;width:auto;display:block}
 @media(max-width:600px){#rb-footer{gap:28px;text-align:center;align-items:center}}
+#rb-footer{margin-top:64px}
 </style>
 <script>
 (function(){function run(){try{
-document.querySelectorAll('a[href$="cenik/index.html"]').forEach(function(a){var li=a.closest('li');if(li&&!li.closest('#astra-footer-menu'))li.classList.add('rb-hide');});
+document.querySelectorAll('a[href$="cenik/index.html"],a[href$="o-nas/index.html"]').forEach(function(a){var li=a.closest('li');if(li&&!li.closest('#astra-footer-menu'))li.classList.add('rb-hide');});
 var fm=document.getElementById('astra-footer-menu');
 if(fm&&!document.getElementById('rb-footer')){var map={};fm.querySelectorAll('a').forEach(function(a){map[a.textContent.trim().toLowerCase()]=a.getAttribute('href');});
 function L(t,k){var h=map[k];return h?('<a href="'+h+'">'+t+'</a>'):'';}
-var base=/\/(izposoja|skladiscenje|cenik|o-nas)\//i.test(location.pathname)?'../':'';
+var base=/\/(izposoja|skladiscenje|cenik|o-nas|blog|pravila-in-pogoji)\//i.test(location.pathname)?'../':'';
 var logoSrc=base+'Slike/cropped-3.png';
 var maps='https://www.google.com/maps/place//data=!4m2!3m1!1s0x4765336af314f7ab:0x9ac8dbcd3587e6c9?sa=X&ved=1t:8290&ictx=111';
 var f=document.createElement('div');f.id='rb-footer';
