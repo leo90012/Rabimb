@@ -9,7 +9,8 @@
     {id:"izp20",naziv:"20 boxov",boxes:20,cena:49},
     {id:"izp40",naziv:"40 boxov",boxes:40,cena:89},
     {id:"izp60",naziv:"60 boxov",boxes:60,cena:119},
-    {id:"izp80",naziv:"80 boxov",boxes:80,cena:149}
+    {id:"izp80",naziv:"80 boxov",boxes:80,cena:149},
+    {id:"izpkontakt",naziv:"Nad 80 boxov",contact:true}
   ];
   var SKL=[
     {id:"skl10",naziv:"Do 10 boxov",min:1,max:10,perBox:3.90},
@@ -66,29 +67,35 @@
     var izp=s.tip==="izposoja";
     var arr=izp?IZP:SKL;
     var cards=arr.map(function(p){
-      if(p.contact){return '<div class="plan"><div class="pic"><img src="Slike/Skatle.png" alt="box" /></div><div class="pt">'+esc(p.naziv)+'</div><div class="pd">po dogovoru</div><div class="pp" style="font-size:17px">Po dogovoru</div><div class="pu">&nbsp;</div><a class="btn small" href="mailto:'+esc(CFG.SUPPORT_EMAIL||"info@rabimbox.si")+'?subject='+encodeURIComponent("Povprasevanje - skladiscenje nad 50 boxov")+'" style="text-decoration:none">Kontaktiraj nas</a></div>';}
+      if(p.contact){var subj="Povpraševanje – "+(izp?"izposoja":"skladiščenje")+" "+p.naziv;return '<div class="plan" data-plan="'+p.id+'"><div class="pic"><img src="Slike/Skatle.png" alt="box" /></div><div class="pt">'+esc(p.naziv)+'</div><div class="pd">po dogovoru</div><div class="pp" style="font-size:17px">Po dogovoru</div><div class="pu">&nbsp;</div><a class="btn small" href="mailto:'+esc(CFG.SUPPORT_EMAIL||"info@rabimbox.si")+'?subject='+encodeURIComponent(subj)+'" style="text-decoration:none">Kontaktiraj nas</a></div>';}
       var sel=s.plan===p.id?" sel":"";
       var price=izp?eur(p.cena):eur(p.perBox);
       var unit=izp?"mesečno":"1 box / 1 mesec";
       var desc=izp?("Najem "+p.boxes+" boxov"):("do "+p.max+" boxov");
-      return '<div class="plan'+sel+'"><div class="pic"><img src="Slike/Skatle.png" alt="box" /></div><div class="pt">'+esc(p.naziv)+'</div>'+
+      return '<div class="plan'+sel+'" data-plan="'+p.id+'"><div class="pic"><img src="Slike/Skatle.png" alt="box" /></div><div class="pt">'+esc(p.naziv)+'</div>'+
         '<div class="pd">'+esc(desc)+'</div><div class="pp">'+price+'</div><div class="pu">'+unit+'</div>'+
         '<button class="btn small selbtn" data-id="'+p.id+'">Izberi</button></div>';
     }).join("");
     var boxSel="";
-    if(!izp&&s.plan){var p=planObj();var pmin=p.min||1;boxSel='<div class="card mt" style="max-width:460px;margin:18px auto 0"><div class="field"><label>Koliko boxov shranjuješ? ('+pmin+'–'+p.max+')</label><input type="number" id="stBoxov" min="'+pmin+'" max="'+p.max+'" value="'+(s.stBoxov||"")+'" placeholder="npr. '+pmin+'" /></div><div class="center muted" id="cenaCalc">'+(s.stBoxov?("Mesečno: "+eur(monthly())):"Vpiši število boxov")+'</div><div class="hint" style="margin-top:8px">Zaračunavamo samo število polnih boxov. Primer: če naročite 20 boxov in jih napolnite 10, se vam obračuna skladišče za 10 boxov.</div></div>';}
+    if(!izp){boxSel='<div class="card mt" style="max-width:480px;margin:18px auto 0"><div class="field"><label>Koliko boxov shranjuješ?</label><input type="number" id="stBoxov" min="1" value="'+(s.stBoxov||"")+'" placeholder="npr. 10" /></div><div class="center" id="cenaCalc" style="min-height:22px">'+calcText()+'</div><div class="hint" style="margin-top:8px">Zaračunavamo samo število polnih boxov. Primer: če naročite 20 boxov in jih napolnite 10, se obračuna skladišče za 10 boxov.</div></div>';}
     render('<h1 class="co-title"><button class="back-inline" data-back>‹</button>'+(izp?"Paketi izposoje":"Paketi skladiščenja")+'</h1>'+
-      '<p class="co-sub">Najprej izberi paket'+(izp?"":", nato vpiši število boxov")+'.</p>'+
+      '<p class="co-sub">'+(izp?"Izberi paket.":"Vpiši število boxov – paket in ceno določimo samodejno.")+'</p>'+
       progress("paketi")+'<div class="plan-grid">'+cards+'</div>'+boxSel+
       '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="next" '+(canNextPaketi()?"":"disabled")+'>Naprej</button></div>'+
       infoBlock());
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="choice";route();};});
-    q$all(".selbtn").forEach(function(b){b.onclick=function(){s.plan=b.getAttribute("data-id");if(s.tip==="izposoja"){s.step="termin";route();}else{route();}};});
-    var bx=q$("#stBoxov");if(bx){bx.oninput=function(){var v=parseInt(bx.value,10);var p=planObj();if(v>p.max)v=p.max;s.stBoxov=isNaN(v)?null:v;var c=q$("#cenaCalc");if(c)c.textContent=s.stBoxov?("Mesečno: "+eur(monthly())):"Vpiši število boxov";var n=q$("#next");if(n)n.disabled=!canNextPaketi();};
-      bx.onchange=function(){var p=planObj();var pmin=p.min||1;if(s.stBoxov&&s.stBoxov<pmin){s.stBoxov=pmin;bx.value=pmin;var c=q$("#cenaCalc");if(c)c.textContent="Mesečno: "+eur(monthly());var n=q$("#next");if(n)n.disabled=!canNextPaketi();}};}
+    q$all(".selbtn").forEach(function(b){b.onclick=function(){var id=b.getAttribute("data-id");if(s.tip==="izposoja"){s.plan=id;s.step="termin";route();return;}var pl=null;SKL.forEach(function(x){if(x.id===id)pl=x;});if(pl&&pl.min){s.stBoxov=pl.min;s.plan=id;}route();}});
+    var bx=q$("#stBoxov");if(bx){bx.oninput=function(){var v=parseInt(bx.value,10);s.stBoxov=(isNaN(v)||v<1)?null:v;syncSklPlan();var c=q$("#cenaCalc");if(c)c.innerHTML=calcText();q$all(".plan").forEach(function(el){el.classList.toggle("sel",!!s.plan&&el.getAttribute("data-plan")===s.plan);});var n=q$("#next");if(n)n.disabled=!canNextPaketi();};}
     var nb=q$("#next");if(nb)nb.onclick=function(){if(canNextPaketi()){s.step="termin";route();}};
   }
-  function canNextPaketi(){if(!s.plan)return false;if(s.tip==="skladiscenje"){var p=planObj();if(!p)return false;var pmin=p.min||1;return !!s.stBoxov&&s.stBoxov>=pmin&&s.stBoxov<=p.max;}return true;}
+  function planForBoxes(n){if(n<=10)return "skl10";if(n<=25)return "skl25";if(n<=50)return "skl50";return "sklkontakt";}
+  function syncSklPlan(){if(s.tip!=="skladiscenje")return;s.plan=(s.stBoxov&&s.stBoxov>=1)?planForBoxes(s.stBoxov):null;}
+  function calcText(){
+    if(!s.stBoxov)return '<span class="muted">Vpiši število boxov</span>';
+    if(s.stBoxov>50)return '<span style="color:#a01810;font-weight:600">Za več kot 50 boxov spletno naročilo ni mogoče – <a href="mailto:'+esc(CFG.SUPPORT_EMAIL||"info@rabimbox.si")+'?subject='+encodeURIComponent("Povpraševanje – skladiščenje nad 50 boxov")+'">kontaktirajte nas</a>.</span>';
+    var p=planObj();return '<span class="muted">Paket: '+(p?esc(p.naziv):"-")+' · Mesečno: '+eur(monthly())+'</span>';
+  }
+  function canNextPaketi(){if(s.tip==="skladiscenje")return !!s.stBoxov&&s.stBoxov>=1&&s.stBoxov<=50;return !!s.plan;}
 
   // ---- DODATKI ----
   function viewDodatki(){
