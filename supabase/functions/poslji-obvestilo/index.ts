@@ -43,13 +43,13 @@ function eur(v: unknown): string {
 function ovoj(naslov: string, telo: string): string {
   return `<div style="background:#f4f6f9;padding:24px 0;font-family:Arial,Helvetica,sans-serif;color:#2a3342">
     <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 6px 22px rgba(16,24,40,.06)">
-      <div style="background:#0067ff;padding:18px 26px;color:#fff;font-size:20px;font-weight:700;letter-spacing:.5px">Rabimbox</div>
+      <div style="background:#6ec1e4;padding:16px 26px;color:#fff;font-size:20px;font-weight:700;letter-spacing:.5px"><img src="https://rabimbox.si/wp-content/uploads/2024/08/cropped-3-270x270.png" alt="" width="34" height="34" style="vertical-align:middle;margin-right:10px;border-radius:6px" />Rabimbox</div>
       <div style="padding:26px">
         <h1 style="font-size:20px;margin:0 0 14px;color:#111">${esc(naslov)}</h1>
         ${telo}
       </div>
       <div style="padding:16px 26px;border-top:1px solid #eef1f6;color:#7b8794;font-size:12px">
-        Rabimbox · <a href="mailto:info@rabimbox.si" style="color:#0067ff;text-decoration:none">info@rabimbox.si</a> · +386 (0)40 796 040
+        Rabimbox · <a href="mailto:info@rabimbox.si" style="color:#6ec1e4;text-decoration:none">info@rabimbox.si</a> · +386 (0)40 796 040
       </div>
     </div>
   </div>`;
@@ -58,7 +58,7 @@ function vrstica(k: string, v: string): string {
   return `<tr><td style="padding:6px 0;color:#7b8794;font-size:13px">${esc(k)}</td><td style="padding:6px 0;text-align:right;color:#2a3342;font-size:14px;font-weight:600">${esc(v)}</td></tr>`;
 }
 function btn(href: string, label: string): string {
-  return `<div style="margin:22px 0 6px"><a href="${esc(href)}" style="display:inline-block;background:#0067ff;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:8px;font-size:14px">${esc(label)}</a></div>`;
+  return `<div style="margin:22px 0 6px"><a href="${esc(href)}" style="display:inline-block;background:#6ec1e4;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:8px;font-size:14px">${esc(label)}</a></div>`;
 }
 
 async function posljiEmail(to: string, subject: string, html: string) {
