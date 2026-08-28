@@ -17,7 +17,7 @@
     {id:"skl50",naziv:"Do 50 boxov",min:26,max:50,perBox:3.30},
     {id:"sklkontakt",naziv:"Nad 50 boxov",contact:true}
   ];
-  var STEPS=[["paketi","Paketi"],["termin","Termin"],["povzetek","Povzetek"],["racun","Račun"]];
+  var STEPS=[["paketi","Paketi"],["termin","Termin"],["povzetek","Povzetek"]];
 
   var s={step:"choice",tip:null,plan:null,stBoxov:null,extras:{stopnice:false,krhko:false,pomoc:false,dvigalo:false},
     opis:"",nadstropje:"",naslov:"",enota:"",postna:"",mesto:"",telefon:"",datum:"",cas:"",ime:"",priimek:"",email:"",geslo:"",racunMode:"novo",soglasje:false,loggedIn:false,loginHint:false};
@@ -196,14 +196,87 @@
       kv("Telefon",s.telefon||"-")+
       kv("Termin",fmtDatum(s.datum)+" "+(s.cas||""))+
       '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="inquiry">Oddaj povpraševanje</button>'+(s.loggedIn?'<button class="btn ghost" id="payLater">Shrani – plačaj kasneje</button><button class="btn" id="pay">Plačaj zdaj</button>':'<button class="btn" id="next">Registracija in plačilo</button>')+'</div></div>');
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="inquiry">Oddaj povpraševanje</button>'+(s.loggedIn?'<button class="btn" id="pay">Plačaj zdaj</button>':'<button class="btn" id="login">Prijava / registracija</button>')+'</div></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="termin";route();};});
-    var pb=q$("#pay");if(pb)pb.onclick=function(){submit(true);};
-    var plB=q$("#payLater");if(plB)plB.onclick=function(){submit(false);};
-    var nx=q$("#next");if(nx)nx.onclick=function(){s.step="racun";route();};
+    var pb=q$("#pay");if(pb)pb.onclick=submit;
+    var lb=q$("#login");if(lb)lb.onclick=function(){openAuthModal();};
     var iq=q$("#inquiry");if(iq)iq.onclick=function(){s.step="povprasevanje";route();};
   }
   function kv(k,v){return '<div class="kv"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>';}
+
+  // ---- PRIJAVA / REGISTRACIJA (pop-up) ----
+  function gid(id){return document.getElementById(id);}
+  function closeAuthModal(){var m=gid("rb-auth-modal");if(m)m.parentNode.removeChild(m);}
+  function openAuthModal(mode){
+    mode=mode||"login";closeAuthModal();
+    var ov=document.createElement("div");ov.id="rb-auth-modal";ov.className="rb-modal-ov";
+    ov.innerHTML='<div class="rb-modal"><button class="rb-modal-x" type="button" aria-label="Zapri">×</button>'+
+      '<h3 class="rb-modal-t">Za nadaljevanje se prijavi</h3>'+
+      '<div class="rb-tabs"><button type="button" class="rb-tab" data-m="login">Prijava</button><button type="button" class="rb-tab" data-m="register">Registracija</button></div>'+
+      '<div id="rb-auth-body"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click",function(e){if(e.target===ov)closeAuthModal();});
+    ov.querySelector(".rb-modal-x").onclick=closeAuthModal;
+    ov.querySelectorAll(".rb-tab").forEach(function(t){t.onclick=function(){renderAuthBody(t.getAttribute("data-m"));};});
+    renderAuthBody(mode);
+  }
+  function renderAuthBody(mode){
+    var body=gid("rb-auth-body");if(!body)return;
+    var m=gid("rb-auth-modal");if(m)m.querySelectorAll(".rb-tab").forEach(function(x){x.classList.toggle("on",x.getAttribute("data-m")===mode);});
+    if(mode==="register"){
+      body.innerHTML='<div class="rowflex"><div class="field"><label>Ime</label><input id="am_ime" value="'+esc(s.ime)+'"/></div><div class="field"><label>Priimek</label><input id="am_priimek" value="'+esc(s.priimek)+'"/></div></div>'+
+        '<div class="field"><label>E-pošta</label><input type="email" id="am_email" value="'+esc(s.email)+'" placeholder="ime@primer.si"/></div>'+
+        '<div class="field"><label>Geslo</label><input type="password" id="am_geslo" placeholder="vsaj 6 znakov"/></div>'+
+        '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#7b8794;margin:2px 0 12px"><input type="checkbox" id="am_soglasje"/> <span>Soglašam s <a href="../pravila-in-pogoji/index.html" target="_blank" rel="noopener">pogoji poslovanja</a>.</span></label>'+
+        '<div id="am_err"></div><button class="btn block" type="button" id="am_go">Ustvari račun in nadaljuj</button>';
+      gid("am_go").onclick=doRegister;
+    }else{
+      body.innerHTML='<div class="field"><label>E-pošta</label><input type="email" id="am_email" value="'+esc(s.email)+'" placeholder="ime@primer.si"/></div>'+
+        '<div class="field"><label>Geslo</label><input type="password" id="am_geslo"/></div>'+
+        '<div id="am_err"></div><button class="btn block" type="button" id="am_go">Prijava in nadaljuj</button>';
+      gid("am_go").onclick=doLogin;
+    }
+  }
+  function amErr(h){var e=gid("am_err");if(e)e.innerHTML=h?'<div class="alert err">'+esc(h)+'</div>':"";}
+  async function afterAuth(email,ime,priimek){
+    s.loggedIn=true;s.loginHint=false;if(email)s.email=email;if(ime&&!s.ime)s.ime=ime;if(priimek&&!s.priimek)s.priimek=priimek;
+    try{await loadKupci(email);}catch(e){}
+    closeAuthModal();route();
+  }
+  async function doLogin(){
+    if(!sb){amErr("Supabase ni na voljo.");return;}
+    var email=(gid("am_email").value||"").trim(),geslo=gid("am_geslo").value||"";
+    if(!email||!geslo){amErr("Vpiši e-pošto in geslo.");return;}
+    var go=gid("am_go");go.disabled=true;go.textContent="Prijava...";
+    var r=await sb.auth.signInWithPassword({email:email,password:geslo});
+    if(r.error){amErr(r.error.message||"Napaka pri prijavi.");go.disabled=false;go.textContent="Prijava in nadaljuj";return;}
+    await afterAuth(email);
+  }
+  async function doRegister(){
+    if(!sb){amErr("Supabase ni na voljo.");return;}
+    var ime=(gid("am_ime").value||"").trim(),priimek=(gid("am_priimek").value||"").trim();
+    var email=(gid("am_email").value||"").trim(),geslo=gid("am_geslo").value||"",soglasje=gid("am_soglasje").checked;
+    if(!email||email.indexOf("@")<1){amErr("Vpiši veljaven e-naslov.");return;}
+    if(geslo.length<6){amErr("Geslo mora imeti vsaj 6 znakov.");return;}
+    if(!soglasje){amErr("Za registracijo potrdi pogoje poslovanja.");return;}
+    var go=gid("am_go");go.disabled=true;go.textContent="Ustvarjam...";
+    var su=await sb.auth.signUp({email:email,password:geslo});
+    if(su.error){
+      if(/registered|exists/i.test(su.error.message||"")){
+        var li=await sb.auth.signInWithPassword({email:email,password:geslo});
+        if(li.error){amErr("Ta e-naslov je že registriran – vpiši pravo geslo ali uporabi Prijava.");go.disabled=false;go.textContent="Ustvari račun in nadaljuj";return;}
+        return afterAuth(email,ime,priimek);
+      }
+      amErr(su.error.message);go.disabled=false;go.textContent="Ustvari račun in nadaljuj";return;
+    }
+    var sess=(su.data&&su.data.session)?su.data.session:null;
+    if(!sess){
+      var li2=await sb.auth.signInWithPassword({email:email,password:geslo});
+      if(li2.error){gid("am_err").innerHTML='<div class="alert ok">Račun ustvarjen. Če je vključena potrditev e-pošte, preveri predal, nato se prijavi.</div>';go.disabled=false;go.textContent="Ustvari račun in nadaljuj";return;}
+    }
+    s.soglasje=true;
+    await afterAuth(email,ime,priimek);
+  }
 
   // ---- POVPRAŠEVANJE ----
   function viewPovprasevanje(){
@@ -257,10 +330,10 @@
       '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" /></div>'+
       '<div class="alert info">Po oddaji te preusmerimo na varno plačilo prvega meseca (Stripe).</div>'+
       '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="saveLater">Shrani – plačaj kasneje</button><button class="btn" id="submit">Plačaj zdaj</button></div></div>');
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="submit">Plačilo</button></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="povzetek";route();};});
     ["ime","priimek","email"].forEach(function(id){q$("#"+id).oninput=function(e){s[id]=e.target.value;};});
-    q$("#submit").onclick=function(){submit(true);};var _sl=q$("#saveLater");if(_sl)_sl.onclick=function(){submit(false);};
+    q$("#submit").onclick=submit;
   }
 
   function viewRačunGost(){
@@ -279,16 +352,15 @@
       '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#7b8794;margin:0 0 14px;cursor:pointer"><input type="checkbox" id="soglasje" '+(s.soglasje?"checked":"")+' style="margin-top:2px" /> <span>Soglašam s <a href="../pravila-in-pogoji/index.html" target="_blank" rel="noopener">pogoji poslovanja</a>.</span></label>'+
       '<div class="alert info">Po oddaji te preusmerimo na varno plačilo prvega meseca (Stripe).</div>'+
       '</div>'+summaryCard()+'</div>'+
-      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="saveLater">Shrani – plačaj kasneje</button><button class="btn" id="submit">Plačaj zdaj</button></div></div>');
+      '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="submit">Plačilo</button></div>');
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="povzetek";route();};});
     ["ime","priimek","email","geslo"].forEach(function(id){q$("#"+id).oninput=function(e){s[id]=e.target.value;};});
     var cb=q$("#soglasje");if(cb)cb.onchange=function(e){s.soglasje=e.target.checked;};
     var mp=q$("#mPrijava");if(mp)mp.onclick=function(){s.loginHint=true;window.open("../Moj-profil/index.html","_blank");route();};
-    q$("#submit").onclick=function(){submit(true);};var _sl=q$("#saveLater");if(_sl)_sl.onclick=function(){submit(false);};
+    q$("#submit").onclick=submit;
   }
 
-  async function submit(payNow){
-    if(payNow!==false)payNow=true;
+  async function submit(){
     var _hp=q$("#hp_order"); if(_hp&&_hp.value){return;}
     if(!s.email||s.email.indexOf("@")<0||!s.ime||!s.priimek||!s.naslov||!s.postna||!s.mesto||!s.telefon||!s.datum||!s.cas){alert("Prosim izpolni vse podatke in termin (korak Termin).");s.step="termin";route();return;}
     if(!s.loggedIn){
@@ -317,7 +389,6 @@
       if(r.error)throw r.error;
       // Potrditev naročila po e-pošti (če je funkcija/Resend nastavljen)
       try{ sb.functions.invoke("poslji-obvestilo",{body:{tip:"narocilo",ref:ref}}); }catch(e){}
-      if(!payNow){ s.racun=null; viewShranjeno(ref); return; }
       // Stripe plačilo (Checkout) – preusmeritev na varno plačilno stran
       try{
         var scr=null,lastErr=null;
@@ -359,16 +430,6 @@
       '</div>'+
       (s.emailSent?'':'<p class="muted" style="font-size:12.5px;margin-top:10px">Račun je shranjen; e-pošto s podatki pošljemo po potrditvi.</p>')+
       '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a></div></div>');
-  }
-
-  function viewShranjeno(ref){
-    render('<div class="done-wrap"><div class="done-check">'+ICON.check+'</div>'+
-      '<h1 class="co-title">Naročilo shranjeno!</h1>'+
-      '<p class="co-sub">Hvala, '+esc(s.ime||"")+'. Naročilo smo shranili na tvoj račun kot <b>neplačano</b>'+(ref?' (št. '+esc(ref)+')':'')+'. Plačaš ga lahko kadarkoli v nadzorni plošči.</p>'+
-      '<div class="card" style="text-align:left;max-width:470px;margin:0 auto">'+
-      kv("Storitev",s.tip==="izposoja"?"Izposoja":"Skladiščenje")+kv("Paket",planLabel())+kv("Za plačilo",eur(monthly()))+kv("Termin",fmtDatum(s.datum)+" "+(s.cas||""))+
-      '</div>'+
-      '<div class="mt"><a class="btn" href="../Moj-profil/index.html">Odpri nadzorno ploščo</a> <a class="btn ghost" href="../index.html">Domov</a></div></div>');
   }
 
   function znesekZaNarocilo(o){

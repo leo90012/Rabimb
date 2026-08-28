@@ -161,3 +161,12 @@ button,.btn,a.btn,.sw,.choice,.plan,.selbtn{-webkit-tap-highlight-color:rgba(0,0
   .co-sub{margin-bottom:20px}
   .plan .pd{min-height:0}
 }
+
+/* ===== Prijava/registracija pop-up ===== */
+.rb-modal-ov{position:fixed;inset:0;background:rgba(16,24,40,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.rb-modal{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(16,24,40,.3);position:relative;max-height:92vh;overflow:auto}
+.rb-modal-x{position:absolute;top:8px;right:12px;background:none;border:0;font-size:26px;line-height:1;color:#98a2b3;cursor:pointer}
+.rb-modal-t{font-family:var(--font-h);font-size:19px;margin:2px 0 14px;text-align:center}
+.rb-tabs{display:flex;gap:8px;background:var(--soft);border-radius:9px;padding:4px;margin-bottom:16px}
+.rb-tab{flex:1;padding:9px;border:0;border-radius:7px;background:transparent;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer}
+.rb-tab.on{background:#fff;color:var(--heading);box-shadow:0 1px 3px rgba(16,24,40,.1)}
