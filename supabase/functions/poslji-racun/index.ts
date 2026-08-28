@@ -21,13 +21,15 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const FROM = Deno.env.get("RACUN_FROM") ?? "Rabimbox <onboarding@resend.dev>";
 const LOGO = "https://rabimbox.si/wp-content/uploads/2024/08/cropped-3-270x270.png";
 
-// Podatki podjetja (fiktivni – šef potrdi kasneje)
+// Podatki podjetja
 const FIRMA = {
-  naziv: "Rabimbox d.o.o.",
-  naslov: "Tehnološki park 21, 1000 Ljubljana",
-  ddv: "SI12345678",
-  matica: "1234567000",
-  iban: "SI56 1234 5678 9012 345",
+  naziv: "Rabim d.o.o.",
+  naslov: "Proletarska cesta 4, 1000 Ljubljana",
+  ddv: "SI45163260",
+  matica: "7155778000",
+  iban: "SI56 0201 2026 2090 861",
+  swift: "LJBASI2X",
+  banka: "NLB d.d.",
   email: "info@rabimbox.si",
 };
 
@@ -83,7 +85,8 @@ async function makePdf(r: any, kupecNaslov: string, naslovDok: string) {
   T(FIRMA.naziv, M, y, bold, 18, blue); y -= 20;
   T(FIRMA.naslov, M, y, font, 9, muted); y -= 12;
   T("ID za DDV: " + FIRMA.ddv + "   Maticna st.: " + FIRMA.matica, M, y, font, 9, muted); y -= 12;
-  T("IBAN: " + FIRMA.iban + "   " + FIRMA.email, M, y, font, 9, muted);
+  T("TRR: " + FIRMA.iban + " (" + FIRMA.banka + ")   SWIFT: " + FIRMA.swift, M, y, font, 9, muted); y -= 12;
+  T(FIRMA.email, M, y, font, 9, muted);
   R(naslovDok + " " + (r.stevilka ?? ""), width - M, height - M, bold, 14, dark);
 
   y -= 34;
