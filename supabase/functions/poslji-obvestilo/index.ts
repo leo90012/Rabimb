@@ -111,21 +111,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (tip === "obnova") {
-      const to = body.email;
-      if (!to) throw new Error("Manjka email za obnovo.");
-      const ime = body.ime ? `, ${esc(body.ime)}` : "";
-      const telo = `<p style="font-size:14px;line-height:1.6;margin:0 0 10px">Pozdravljeni${ime}, vaša naročnina se izteče <b>${fmtDate(body.datum_do)}</b>.</p>
-        ${body.paket ? `<p style="font-size:14px;margin:0 0 10px">Paket: <b>${esc(body.paket)}</b></p>` : ""}
-        <p style="font-size:13.5px;color:#7b8794;line-height:1.6;margin:0">Za podaljšanje ali spremembo naročnine obiščite svoj račun ali nas kontaktirajte.</p>
-        ${btn(PANEL_URL, "Upravljaj naročnino")}`;
-      await posljiEmail(to, "Opomnik: obnova naročnine – Rabimbox", ovoj("Vaša naročnina se kmalu izteče", telo));
-      return new Response(JSON.stringify({ ok: true, sent: "obnova" }), { headers: { ...cors, "Content-Type": "application/json" } });
-    }
-
     if (tip === "povprasevanje") {
       const to = body.email;
       if (!to) throw new Error("Manjka email za povpraševanje.");
+      // Proti zlorabi: pošljemo samo, če je bilo v zadnjih 15 min res oddano povpraševanje s tem e-naslovom.
+      const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const { data: pv } = await sb.from("povprasevanja").select("id").ilike("email", to).gt("created_at", since).limit(1).maybeSingle();
+      if (!pv) throw new Error("Ni veljavne oddaje povpraševanja.");
       const ime = body.ime ? `, ${esc(body.ime)}` : "";
       const tabela = `<table style="width:100%;border-collapse:collapse;margin-top:6px">
         ${(body.ime || body.priimek) ? vrstica("Ime in priimek", [body.ime, body.priimek].filter(Boolean).join(" ")) : ""}
