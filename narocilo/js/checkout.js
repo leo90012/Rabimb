@@ -84,7 +84,7 @@
       '<div class="nav-btns"><button class="btn ghost" data-back>Nazaj</button><button class="btn" id="next" '+(canNextPaketi()?"":"disabled")+'>Naprej</button></div>'+
       infoBlock());
     q$all("[data-back]").forEach(function(b){b.onclick=function(){s.step="choice";route();};});
-    q$all(".selbtn").forEach(function(b){b.onclick=function(){var id=b.getAttribute("data-id");if(s.tip==="izposoja"){s.plan=id;s.step="termin";route();return;}var pl=null;SKL.forEach(function(x){if(x.id===id)pl=x;});if(pl&&pl.min){s.stBoxov=pl.min;s.plan=id;}route();}});
+    q$all(".selbtn").forEach(function(b){b.onclick=function(){var id=b.getAttribute("data-id");if(s.tip==="izposoja"){s.plan=id;s.step="termin";route();return;}var pl=null;SKL.forEach(function(x){if(x.id===id)pl=x;});if(pl&&pl.min){s.stBoxov=pl.min;s.plan=id;}route();setTimeout(function(){var el=q$("#stBoxov");if(el){try{el.scrollIntoView({behavior:"smooth",block:"center"});}catch(_){}try{el.focus();el.select();}catch(_){}var c=el.closest(".card");if(c){c.classList.add("rb-flash");setTimeout(function(){c.classList.remove("rb-flash");},1100);}}},70);}});
     var bx=q$("#stBoxov");if(bx){bx.oninput=function(){var v=parseInt(bx.value,10);s.stBoxov=(isNaN(v)||v<1)?null:v;syncSklPlan();var c=q$("#cenaCalc");if(c)c.innerHTML=calcText();q$all(".plan").forEach(function(el){el.classList.toggle("sel",!!s.plan&&el.getAttribute("data-plan")===s.plan);});var n=q$("#next");if(n)n.disabled=!canNextPaketi();};}
     var nb=q$("#next");if(nb)nb.onclick=function(){if(canNextPaketi()){s.step="termin";route();}};
   }
@@ -139,6 +139,7 @@
       if(!s.email||s.email.indexOf("@")<1){alert("Prosim vpiši veljaven e-naslov.");return;}
       if(!s.datum||!s.cas){alert("Prosim izberi datum in uro.");return;}
       if(s.datum<todayStr()){alert("Datum ne more biti v preteklosti.");return;}
+      if(isWeekend(s.datum)){alert("Dostave so samo od ponedeljka do petka. Prosim izberi delovni dan.");s.datum="";s.cas="";route();return;}
       s.step="povzetek";route();
     };
   }
@@ -154,7 +155,7 @@
       '<div class="field"><label>Mesto</label><input id="mesto" value="'+esc(s.mesto)+'" placeholder="Ljubljana" /></div></div>'+
       '<div class="rowflex"><div class="field"><label>Telefon</label><input id="telefon" value="'+esc(s.telefon)+'" placeholder="+386..." /></div>'+
       '<div class="field"><label>E-pošta</label><input type="email" id="email" value="'+esc(s.email)+'" placeholder="ime@primer.si" /></div></div>'+
-      '<div class="rowflex"><div class="field"><label>Datum</label><input type="date" id="datum" min="'+todayStr()+'" value="'+esc(s.datum)+'" /></div>'+
+      '<div class="rowflex dt-row"><div class="field"><label>Datum (pon–pet)</label><input type="date" id="datum" min="'+todayStr()+'" value="'+esc(s.datum)+'" /><div class="hint">Dostave samo od ponedeljka do petka.</div></div>'+
       '<div class="field"><label>Ura</label><select id="cas"><option value="">Najprej izberi datum</option></select><div class="hint" id="casHint"></div></div></div>'+
       '<div class="field mt"><label>Vrsta objekta</label><textarea id="opis" rows="2" placeholder="Npr: Hiša, večstanovanjska hiša, blok, poslovni objekt,…">'+esc(s.opis)+'</textarea></div>'+
       '<div class="field mt"><label>Katero nadstropje?</label><textarea id="nadstropje" rows="2" placeholder="Npr: pritličje, 2. nadstropje,…">'+esc(s.nadstropje)+'</textarea></div>'+
@@ -165,13 +166,14 @@
     q$all(".sw").forEach(function(sw){sw.onclick=function(){var k=sw.getAttribute("data-k");s.extras[k]=!s.extras[k];sw.classList.toggle("on",s.extras[k]);};});
     var op=q$("#opis");if(op)op.oninput=function(e){s.opis=e.target.value;};
     var nd=q$("#nadstropje");if(nd)nd.oninput=function(e){s.nadstropje=e.target.value;};
-    q$("#datum").onchange=function(e){s.datum=e.target.value;s.cas="";refreshTimes();};
+    q$("#datum").onchange=function(e){var v=e.target.value;if(v&&isWeekend(v)){alert("Dostave in prevzemi so samo od ponedeljka do petka. Prosim izberi delovni dan.");e.target.value=s.datum||"";return;}s.datum=v;s.cas="";refreshTimes();};
     q$("#cas").onchange=function(e){s.cas=e.target.value;};
     if(s.datum)refreshTimes();
     bindTerminNav();
   }
   function timeOpts(blocked){var o="";for(var h=10;h<=14;h++){var t=(h<10?"0":"")+h+":00";var dis=blocked&&blocked[h]?" disabled":"";o+='<option value="'+t+'"'+dis+(s.cas===t?" selected":"")+'>'+t+(dis?" (zasedeno)":"")+'</option>';}return o;}
   function todayStr(){var d=new Date();var m=d.getMonth()+1,dd=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(dd<10?"0":"")+dd;}
+  function isWeekend(ds){if(!ds)return false;var p=String(ds).split("-");if(p.length<3)return false;var g=new Date(+p[0],+p[1]-1,+p[2]).getDay();return g===0||g===6;}
   async function blockedFor(date){var b={};if(!sb||!date)return b;try{var r=await sb.rpc("zasedeni_termini",{d:date});if(!r.error&&r.data){r.data.forEach(function(t){var h=parseInt(String(t).slice(0,2),10);if(!isNaN(h)){b[h]=1;}});}}catch(e){}return b;}
   async function refreshTimes(){var sel=q$("#cas");if(!sel)return;var hint=q$("#casHint");if(!s.datum){sel.innerHTML='<option value="">Najprej izberi datum</option>';return;}if(hint)hint.textContent="Preverjam razpolozljivost...";var bl=await blockedFor(s.datum);if(bl[parseInt(s.cas,10)])s.cas="";sel.innerHTML='<option value="">Izberi uro</option>'+timeOpts(bl);sel.value=s.cas||"";if(hint)hint.textContent="Zasedeni termini so onemogočeni (dostava traja 1 uro).";}
 
