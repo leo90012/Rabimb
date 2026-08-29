@@ -14,6 +14,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -66,65 +67,115 @@ function znesekZa(o: any): number {
   return Math.round(n * per * 100) / 100;
 }
 
-async function makePdf(r: any, kupecNaslov: string, naslovDok: string) {
+async function makePdf(r: any, kupecNaslov: string, predracun: boolean) {
   const doc = await PDFDocument.create();
   const page = doc.addPage([595.28, 841.89]); // A4
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const { width, height } = page.getSize();
+
+  // Pisava: DejaVu (šumniki), rezerva Helvetica + ascii
+  let font: any, bold: any, uni = true;
+  try {
+    doc.registerFontkit(fontkit);
+    const [rb, bb] = await Promise.all([
+      fetch("https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf").then((x) => x.arrayBuffer()),
+      fetch("https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf").then((x) => x.arrayBuffer()),
+    ]);
+    font = await doc.embedFont(rb, { subset: true });
+    bold = await doc.embedFont(bb, { subset: true });
+  } catch (_) {
+    uni = false;
+    font = await doc.embedFont(StandardFonts.Helvetica);
+    bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  }
+  const X = (t: unknown) => (uni ? String(t ?? "") : ascii(t));
+
   const M = 50;
-  const dark = rgb(0.16, 0.2, 0.26), muted = rgb(0.48, 0.53, 0.58), blue = rgb(0.431, 0.757, 0.894);
-  const T = (t: string, x: number, y: number, f = font, size = 10, color = dark) =>
-    page.drawText(ascii(t), { x, y, size, font: f, color });
-  const R = (t: string, xRight: number, y: number, f = font, size = 10, color = dark) => {
-    const s = ascii(t); const w = f.widthOfTextAtSize(s, size);
-    page.drawText(s, { x: xRight - w, y, size, font: f, color });
+  const dark = rgb(0.11, 0.12, 0.14), gray = rgb(0.42, 0.45, 0.5), lineC = rgb(0.85, 0.87, 0.9);
+  const T = (t: unknown, x: number, yTop: number, f = font, size = 10, color = dark) =>
+    page.drawText(X(t), { x, y: height - yTop, size, font: f, color });
+  const R = (t: unknown, xR: number, yTop: number, f = font, size = 10, color = dark) => {
+    const s = X(t); const w = f.widthOfTextAtSize(s, size);
+    page.drawText(s, { x: xR - w, y: height - yTop, size, font: f, color });
   };
+  const HR = (yTop: number, x1 = M, x2 = width - M) =>
+    page.drawLine({ start: { x: x1, y: height - yTop }, end: { x: x2, y: height - yTop }, thickness: 0.7, color: lineC });
 
-  let y = height - M;
-  T(FIRMA.naziv, M, y, bold, 18, blue); y -= 20;
-  T(FIRMA.naslov, M, y, font, 9, muted); y -= 12;
-  T("ID za DDV: " + FIRMA.ddv + "   Maticna st.: " + FIRMA.matica, M, y, font, 9, muted); y -= 12;
-  T("TRR: " + FIRMA.iban + " (" + FIRMA.banka + ")   SWIFT: " + FIRMA.swift, M, y, font, 9, muted); y -= 12;
-  T(FIRMA.email, M, y, font, 9, muted);
-  R(naslovDok + " " + (r.stevilka ?? ""), width - M, height - M, bold, 14, dark);
-
-  y -= 34;
-  page.drawLine({ start: { x: M, y }, end: { x: width - M, y }, thickness: 1, color: rgb(0.9, 0.92, 0.95) });
-  y -= 22;
-
-  const ime = [r.ime, r.priimek].filter(Boolean).join(" ") || "Stranka";
-  T("Kupec", M, y, bold, 10, muted); y -= 15;
-  T(ime, M, y, font, 11); y -= 13;
-  if (r.email) { T(String(r.email), M, y, font, 10, muted); y -= 13; }
-  if (kupecNaslov) { T(kupecNaslov, M, y, font, 10, muted); y -= 13; }
-
-  let yd = height - M - 56;
-  R("Datum izdaje: " + (r.datum_izdaje ?? ""), width - M, yd, font, 10, dark); yd -= 15;
-  R("Rok placila: " + (r.datum_zapadlosti ?? ""), width - M, yd, font, 10, dark);
-
-  y -= 18;
-  const rowH = 22;
-  const x0 = M, x1 = width - M;
-  const drawRow = (label: string, val: string, f = font, bg = false) => {
-    if (bg) page.drawRectangle({ x: x0, y: y - 6, width: x1 - x0, height: rowH, color: rgb(0.95, 0.97, 1) });
-    T(label, x0 + 6, y, f, 10); R(val, x1 - 6, y, f, 10); y -= rowH;
-  };
-  page.drawRectangle({ x: x0, y: y - 6, width: x1 - x0, height: rowH, color: blue });
-  T("Opis", x0 + 6, y, bold, 10, rgb(1, 1, 1)); R("Znesek", x1 - 6, y, bold, 10, rgb(1, 1, 1)); y -= rowH;
-
+  const naslov = predracun ? "Predračun" : "Račun";
   const osnova = Number(r.osnova ?? 0), ddv = Number(r.ddv ?? 0), znesek = Number(r.znesek ?? 0);
-  drawRow(String(r.opis ?? "Storitev"), eur(osnova, r.valuta || "EUR"));
-  drawRow("Osnova (brez DDV)", eur(osnova, r.valuta || "EUR"), font, true);
-  drawRow("DDV 22 %", eur(ddv, r.valuta || "EUR"));
-  y -= 4;
-  page.drawRectangle({ x: x0, y: y - 6, width: x1 - x0, height: rowH + 4, color: rgb(0.93, 0.96, 0.99) });
-  T("ZA PLACILO", x0 + 6, y, bold, 12, dark); R(eur(znesek, r.valuta || "EUR"), x1 - 6, y, bold, 13, blue);
+  const cur = r.valuta || "EUR";
 
-  const nogaTxt = naslovDok === "PREDRACUN"
-    ? "Predracun ni davcni dokument. Koncni racun prejmete po placilu."
-    : "Racun je izdan v elektronski obliki in velja brez podpisa in ziga.";
-  T(nogaTxt, M, 60, font, 9, muted);
+  // Logo desno zgoraj
+  try {
+    const lb = await fetch(LOGO).then((x) => x.arrayBuffer());
+    const img = await doc.embedPng(lb);
+    const lw = 46, lh = 46;
+    page.drawImage(img, { x: width - M - lw, y: height - M - lh + 4, width: lw, height: lh });
+  } catch (_) { /* brez logotipa */ }
+
+  // Naslov
+  T(naslov, M, M + 22, bold, 24, dark);
+
+  // Meta (levo pod naslovom)
+  let my = M + 48;
+  const meta = (l: string, v: unknown) => { T(l, M, my, font, 9, gray); T(v, M + 115, my, font, 9, dark); my += 14; };
+  meta("Številka", r.stevilka ?? "");
+  meta("Datum izdaje", r.datum_izdaje ?? "");
+  meta("Rok plačila", r.datum_zapadlosti ?? "");
+  meta("ID za DDV", FIRMA.ddv);
+
+  // Izdajatelj (levo) + Za (desno)
+  const colR = 320;
+  let cy = M + 122;
+  T("Izdajatelj", M, cy, bold, 9, gray);
+  T("Za", colR, cy, bold, 9, gray);
+  cy += 15;
+  const kupecIme = [r.ime, r.priimek].filter(Boolean).join(" ") || "Stranka";
+  T(FIRMA.naziv, M, cy, bold, 10.5, dark);
+  T(kupecIme, colR, cy, bold, 10.5, dark);
+  cy += 14;
+  const compLines = [FIRMA.naslov, "TRR: " + FIRMA.iban, FIRMA.banka + " · SWIFT: " + FIRMA.swift, FIRMA.email];
+  const custLines = [kupecNaslov, r.email].filter(Boolean) as string[];
+  const nrows = Math.max(compLines.length, custLines.length);
+  for (let i = 0; i < nrows; i++) {
+    if (compLines[i]) T(compLines[i], M, cy, font, 9, gray);
+    if (custLines[i]) T(custLines[i], colR, cy, font, 9, gray);
+    cy += 13;
+  }
+
+  // Velik znesek
+  let ay = cy + 26;
+  T(eur(znesek, cur) + (predracun ? " za plačilo" : " plačano"), M, ay, bold, 17, dark);
+  ay += 30;
+
+  // Tabela postavk
+  const cQty = 380, cUnit = 470, cTax = 515, cAmt = width - M;
+  T("Opis", M, ay, font, 8.5, gray);
+  R("Kol.", cQty, ay, font, 8.5, gray);
+  R("Cena/enoto", cUnit, ay, font, 8.5, gray);
+  R("DDV", cTax, ay, font, 8.5, gray);
+  R("Znesek", cAmt, ay, font, 8.5, gray);
+  ay += 6; HR(ay); ay += 18;
+  T(r.opis ?? "Storitev", M, ay, font, 10, dark);
+  R("1", cQty, ay, font, 10, dark);
+  R(eur(osnova, cur), cUnit, ay, font, 10, dark);
+  R("22%", cTax, ay, font, 10, dark);
+  R(eur(osnova, cur), cAmt, ay, font, 10, dark);
+  ay += 14; HR(ay); ay += 18;
+
+  // Seštevki (desno)
+  const totL = 355;
+  const totRow = (l: string, v: unknown, b = false) => { const f = b ? bold : font; T(l, totL, ay, f, 10, dark); R(v, cAmt, ay, f, 10, dark); ay += 18; };
+  totRow("Osnova (brez DDV)", eur(osnova, cur));
+  totRow("DDV – Slovenija (22 %)", eur(ddv, cur));
+  ay += 2; HR(ay, totL, cAmt); ay += 16;
+  totRow("Skupaj", eur(znesek, cur), true);
+  totRow(predracun ? "Za plačilo" : "Plačano", eur(znesek, cur), true);
+
+  // Noga
+  const noga = predracun
+    ? "Predračun ni davčni dokument. Končni račun prejmete po plačilu."
+    : "Račun je izdan v elektronski obliki in velja brez podpisa in žiga.";
+  T(noga, M, height - 46, font, 8.5, gray);
 
   return b64(await doc.save());
 }
@@ -135,7 +186,6 @@ Deno.serve(async (req) => {
     const inp = await req.json();
     const tip = String(inp.tip || "racun").toLowerCase();
     const predracun = tip === "predracun";
-    const naslovDok = predracun ? "PREDRACUN" : "RACUN";
     const labelSlo = predracun ? "Predračun" : "Račun";
 
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -198,7 +248,7 @@ Deno.serve(async (req) => {
       </div>`;
 
     let pdfB64 = "";
-    try { pdfB64 = await makePdf(r, kupecNaslov, naslovDok); } catch (e) { console.error("PDF napaka:", e); }
+    try { pdfB64 = await makePdf(r, kupecNaslov, predracun); } catch (e) { console.error("PDF napaka:", e); }
 
     const fname = (predracun ? "Predracun-" : "Racun-") + r.stevilka + ".pdf";
     const body: Record<string, unknown> = {
