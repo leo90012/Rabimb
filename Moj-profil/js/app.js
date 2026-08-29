@@ -245,7 +245,7 @@
     try {
       if (state.tab === "nadzor") { view.innerHTML = await viewNadzor(); wireNadzor(); }
       else if (state.tab === "narocila") { view.innerHTML = await viewNarocila(); wireNarocila(); }
-      else if (state.tab === "racuni") view.innerHTML = await viewRacuni();
+      else if (state.tab === "racuni") { view.innerHTML = await viewRacuni(); wireRacuni(); }
       else if (state.tab === "profil") { view.innerHTML = await viewProfil(); wireProfil(); }
     } catch (err) {
       console.error(err);
@@ -505,7 +505,24 @@
       <div class="s">Izdan: ${fmtDate(r.datum_izdaje)}${r.datum_zapadlosti ? " - Zapadlost: " + fmtDate(r.datum_zapadlosti) : ""}</div></div>
       <div class="end"><div style="font-weight:700;color:var(--heading)">${money(r.znesek, r.valuta || "EUR")}</div>
       <div style="margin-top:4px">${badge}</div>
-      ${r.url_pdf ? `<div style="margin-top:6px"><a href="${esc(r.url_pdf)}" target="_blank" rel="noopener">PDF</a></div>` : ""}</div></div>`;
+      <div style="margin-top:6px"><button class="btn small outline rac-dl" type="button" data-st="${esc(r.stevilka || "")}" data-paid="${paid ? 1 : 0}">Prenesi PDF</button></div></div></div>`;
+  }
+  function wireRacuni() {
+    $$(".rac-dl").forEach((b) => b.addEventListener("click", async () => {
+      const st = b.getAttribute("data-st"); const paid = b.getAttribute("data-paid") === "1";
+      if (!st) { toast("Ni številke dokumenta."); return; }
+      b.disabled = true; const orig = b.textContent; b.textContent = "Pripravljam...";
+      try {
+        const res = await state.sb.functions.invoke("poslji-racun", { body: { tip: paid ? "racun" : "predracun", stevilka: st, download: true } });
+        const d = res && res.data;
+        if (res.error || !d || !d.pdf) throw new Error((res.error && res.error.message) || "Napaka");
+        const bytes = Uint8Array.from(atob(d.pdf), (c) => c.charCodeAt(0));
+        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        const a = document.createElement("a"); a.href = url; a.download = d.filename || (st + ".pdf"); document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (e) { console.warn("prenos:", e); toast("Prenos ni uspel. Poskusi znova."); }
+      b.disabled = false; b.textContent = orig;
+    }));
   }
   function racStatusBadge(s) {
     const v = (s || "").toLowerCase(); let c = "amber";

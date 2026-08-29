@@ -16,6 +16,17 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const FROM = Deno.env.get("RACUN_FROM") ?? "Rabimbox <onboarding@resend.dev>";
 const PANEL_URL = "https://leo90012.github.io/Rabimb/Moj-profil/index.html";
+const OWNER_EMAIL = Deno.env.get("OWNER_EMAIL") ?? "info@rabimbox.si";
+
+// Vloga klicatelja iz Authorization JWT (za omejitev občutljivih tipov na service_role)
+function callerRole(req: Request): string {
+  try {
+    const tok = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+    const p = tok.split(".")[1];
+    const j = JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/")));
+    return j.role || "";
+  } catch (_) { return ""; }
+}
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -153,6 +164,62 @@ Deno.serve(async (req) => {
         } catch (_) { /* ignore posamezno */ }
       }
       return new Response(JSON.stringify({ ok: true, sent: "obnova_batch", poslano }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
+    // Obvestilo LASTNIKU o novem naročilu (fiksni naslov)
+    if (tip === "lastnik_narocilo") {
+      const ref = body.ref;
+      if (!ref) throw new Error("Manjka ref.");
+      const { data: o } = await sb.from("narocila").select("*").eq("stevilka", ref).order("id", { ascending: false }).limit(1).maybeSingle();
+      if (!o) throw new Error("Naročilo ni najdeno.");
+      const tabela = `<table style="width:100%;border-collapse:collapse;margin-top:6px">
+        ${vrstica("Številka", o.stevilka || ("#" + o.id))}
+        ${vrstica("Storitev", String(o.tip || "").toLowerCase().includes("izpos") ? "Izposoja" : "Skladiščenje")}
+        ${vrstica("Paket", o.paket || "-")}
+        ${o.cena_opis ? vrstica("Cena", o.cena_opis) : ""}
+        ${vrstica("Kupec", [o.ime, o.priimek].filter(Boolean).join(" ") || "-")}
+        ${o.email ? vrstica("E-pošta", o.email) : ""}
+        ${o.telefon ? vrstica("Telefon", o.telefon) : ""}
+        ${o.datum_dostave ? vrstica("Termin", fmtDate(o.datum_dostave) + (o.cas_dostave ? " ob " + o.cas_dostave : "")) : ""}
+        ${o.naslov ? vrstica("Naslov", o.naslov + (o.mesto ? ", " + o.mesto : "")) : ""}
+        ${o.opis_lokacije ? vrstica("Objekt", o.opis_lokacije) : ""}
+        ${vrstica("Plačano", o.placano === true ? "Da" : "Ne")}
+      </table>`;
+      const telo = `<p style="font-size:14px;margin:0 0 4px">Novo naročilo na spletni strani:</p>${tabela}${btn(PANEL_URL, "Odpri panel")}`;
+      await posljiEmail(OWNER_EMAIL, `Novo naročilo ${o.stevilka || ""} – Rabimbox`, ovoj("Novo naročilo", telo));
+      return new Response(JSON.stringify({ ok: true, sent: "lastnik_narocilo" }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
+    // Obvestilo LASTNIKU o povpraševanju (fiksni naslov)
+    if (tip === "lastnik_povprasevanje") {
+      const tabela = `<table style="width:100%;border-collapse:collapse;margin-top:6px">
+        ${vrstica("Ime in priimek", [body.ime, body.priimek].filter(Boolean).join(" ") || "-")}
+        ${body.email ? vrstica("E-pošta", String(body.email)) : ""}
+        ${body.telefon ? vrstica("Telefon", String(body.telefon)) : ""}
+        ${body.paket ? vrstica("Paket", String(body.paket)) : ""}
+      </table>`;
+      const vpr = body.vprasanje ? `<div style="margin-top:12px;background:#f4f6f9;border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.6;color:#2a3342">${esc(body.vprasanje)}</div>` : "";
+      const telo = `<p style="font-size:14px;margin:0 0 4px">Novo povpraševanje s spletne strani:</p>${tabela}${vpr}`;
+      await posljiEmail(OWNER_EMAIL, "Novo povpraševanje – Rabimbox", ovoj("Novo povpraševanje", telo));
+      return new Response(JSON.stringify({ ok: true, sent: "lastnik_povprasevanje" }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
+    // Obvestilo STRANKI ob dostavi/prevzemu (samo service_role -> DB trigger)
+    if (tip === "dostava" || tip === "prevzem") {
+      if (callerRole(req) !== "service_role") throw new Error("Ni dovoljeno.");
+      const to = body.email;
+      if (!to) throw new Error("Manjka email.");
+      const ime = body.ime ? `, ${esc(body.ime)}` : "";
+      const jeDost = tip === "dostava";
+      const naslovE = jeDost ? "Boxi so dostavljeni" : "Boxi so prevzeti";
+      const besedilo = jeDost
+        ? "vaši boxi so bili dostavljeni. Veselimo se sodelovanja!"
+        : "vaše boxe smo prevzeli in jih varno skladiščimo.";
+      const telo = `<p style="font-size:14px;line-height:1.6;margin:0 0 6px">Pozdravljeni${ime}, ${besedilo}</p>
+        <p style="font-size:13.5px;color:#7b8794;line-height:1.6;margin:0">Stanje boxov si lahko ogledate v svojem računu.</p>
+        ${btn(PANEL_URL, "Moj račun")}`;
+      await posljiEmail(to, naslovE + " – Rabimbox", ovoj(naslovE, telo));
+      return new Response(JSON.stringify({ ok: true, sent: tip }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
     throw new Error("Neznan tip obvestila.");

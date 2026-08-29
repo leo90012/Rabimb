@@ -48,6 +48,14 @@ function eur(n: number, cur = "EUR") {
 function ascii(s: unknown) {
   return String(s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
 }
+function callerEmail(req: Request): string {
+  try {
+    const tok = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+    const p = tok.split(".")[1];
+    const j = JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/")));
+    return j.email || "";
+  } catch (_) { return ""; }
+}
 function b64(bytes: Uint8Array) {
   let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
@@ -249,6 +257,17 @@ Deno.serve(async (req) => {
 
     let pdfB64 = "";
     try { pdfB64 = await makePdf(r, kupecNaslov, predracun); } catch (e) { console.error("PDF napaka:", e); }
+
+    // Način PRENOS: vrni PDF (base64) namesto pošiljanja; le lastnik dokumenta.
+    if (inp.download) {
+      const ce = callerEmail(req);
+      if (!ce || ce.toLowerCase() !== String(r.email || "").toLowerCase()) {
+        return new Response(JSON.stringify({ error: "Ni dovoljeno." }), { status: 403, headers: { ...cors, "Content-Type": "application/json" } });
+      }
+      if (!pdfB64) throw new Error("PDF ni bil ustvarjen.");
+      const fname = (predracun ? "Predracun-" : "Racun-") + r.stevilka + ".pdf";
+      return new Response(JSON.stringify({ ok: true, pdf: pdfB64, filename: fname }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
 
     const fname = (predracun ? "Predracun-" : "Racun-") + r.stevilka + ".pdf";
     const body: Record<string, unknown> = {

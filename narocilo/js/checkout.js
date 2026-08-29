@@ -318,6 +318,7 @@
       if(r.error)throw r.error;
       // Potrditveni e-mail s povzetkom povpraševanja (če je Resend nastavljen)
       try{ sb.functions.invoke("poslji-obvestilo",{body:{tip:"povprasevanje",email:email,ime:ime,priimek:priimek,telefon:tel,paket:planLabel(),vprasanje:vpr}}); }catch(e){}
+      try{ sb.functions.invoke("poslji-obvestilo",{body:{tip:"lastnik_povprasevanje",ime:ime,priimek:priimek,email:email,telefon:tel,paket:planLabel(),vprasanje:vpr}}); }catch(e){}
       render('<div class="done-wrap"><div class="done-check">'+ICON.check+'</div>'+
         '<h1 class="co-title">Hvala!</h1><p class="co-sub">Kontaktirali vas bomo v najkrajšem možnem času. Povzetek smo poslali na vaš e-naslov.</p>'+
         '<div class="mt"><a class="btn" href="../index.html">Nazaj na domačo stran</a></div></div>');
@@ -399,6 +400,7 @@
       if(r.error)throw r.error;
       // Predračun po e-pošti (PDF) – potrditev naročila (če je funkcija/Resend nastavljen)
       try{ sb.functions.invoke("poslji-racun",{body:{tip:"predracun",stevilka:ref}}); }catch(e){}
+      try{ sb.functions.invoke("poslji-obvestilo",{body:{tip:"lastnik_narocilo",ref:ref}}); }catch(e){}
       // Stripe plačilo (Checkout) – preusmeritev na varno plačilno stran
       try{
         var scr=null,lastErr=null;
